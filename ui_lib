@@ -3467,18 +3467,19 @@ do
             local skel_connections = {
                 {"Head", "UpperTorso"},
                 {"UpperTorso", "LowerTorso"},
-                {"UpperTorso", "LeftUpperArm"},
-                {"LeftUpperArm", "LeftLowerArm"},
-                {"LeftLowerArm", "LeftHand"},
-                {"UpperTorso", "RightUpperArm"},
-                {"RightUpperArm", "RightLowerArm"},
-                {"RightLowerArm", "RightHand"},
-                {"LowerTorso", "LeftUpperLeg"},
-                {"LeftUpperLeg", "LeftLowerLeg"},
-                {"LeftLowerLeg", "LeftFoot"},
-                {"LowerTorso", "RightUpperLeg"},
-                {"RightUpperLeg", "RightLowerLeg"},
-                {"RightLowerLeg", "RightFoot"}
+                {"LeftHand", "LeftLowerArm"},
+                {"LeftLowerArm", "LeftUpperArm"},
+                {"LeftUpperArm", "UpperTorso"},
+                {"RightHand", "RightLowerArm"},
+                {"RightLowerArm", "RightUpperArm"},
+                {"RightUpperArm", "UpperTorso"},
+                {"LeftFoot", "LeftLowerLeg"},
+                {"LeftLowerLeg", "LeftUpperLeg"},
+                {"LeftUpperLeg", "LowerTorso"},
+                {"RightFoot", "RightLowerLeg"},
+                {"RightLowerLeg", "RightUpperLeg"},
+                {"RightUpperLeg", "LowerTorso"},
+                {"LowerTorso", "UpperTorso"}
             }
 
             for i = 1, #skel_connections do
@@ -3793,7 +3794,7 @@ do
                             local angle = math.deg(math.atan2(dir.Y, dir.X))
 
                             line.Instance.Visible = true
-                            line.Instance.Size = UDim2.fromOffset(dist, 1)
+                            line.Instance.Size = UDim2.fromOffset(dist, 1.5)
                             line.Instance.Position = UDim2.fromOffset(pos1.X, pos1.Y)
                             line.Instance.Rotation = angle
                             line.Instance.AnchorPoint = Vector2.new(0, 0.5)
