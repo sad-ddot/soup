@@ -210,7 +210,7 @@ do
             ["Background"] = Color3.fromRGB(18, 18, 22),
             ["Outline"] = Color3.fromRGB(40, 40, 48),
             ["Border"] = Color3.fromRGB(24, 24, 30),
-            ["Accent"] = Color3.fromRGB(255, 145, 50),
+            ["Accent"] = Color3.fromRGB(160, 90, 255),
             ["Risky"] = Color3.fromRGB(255, 60, 60),
             ["Light Border"] = Color3.fromRGB(32, 32, 40),
             ["Border 2"] = Color3.fromRGB(12, 12, 16),
@@ -2953,28 +2953,38 @@ do
                     Name = "\0",
                     Parent = Library.Holder.Instance,
                     AnchorPoint = Vector2.new(0.5, 0),
-                    Position = UDim2.new(0.5, 0, 0, 42),
-                    Size = UDim2.new(0, 0, 0, 25),
+                    Position = UDim2.new(0.5, 0, 0, 12),
+                    Size = UDim2.new(0, 0, 0, 26),
                     BorderSizePixel = 0,
                     AutomaticSize = Enum.AutomaticSize.X,
-                    BackgroundColor3 = Library.Theme["Background"]
-                }):AddToTheme({ BackgroundColor3 = 'Background' })
+                    BackgroundColor3 = Library.Theme["Section"]
+                }):AddToTheme({ BackgroundColor3 = 'Section' })
 
                 Items["Watermark"]:MakeDraggable()
 
                 do
                     local _wmCorner = Instance.new("UICorner")
-                    _wmCorner.CornerRadius = UDim.new(0, 0)
+                    _wmCorner.CornerRadius = UDim.new(0, 4)
                     _wmCorner.Parent = Items["Watermark"].Instance
                 end
 
-                Library:Create("UIStroke", {
+                do
+                    local _wmStroke = Instance.new("UIStroke")
+                    _wmStroke.Color = Library.Theme["Accent"]
+                    _wmStroke.Thickness = 1
+                    _wmStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                    _wmStroke.Parent = Items["Watermark"].Instance
+                    table.insert(Library.ThemeMap, { Instance = _wmStroke, Property = "Color", ThemeKey = "Accent" })
+                end
+
+                local wmPad = Library:Create("UIPadding", {
                     Name = "\0",
                     Parent = Items["Watermark"].Instance,
-                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                    LineJoinMode = Enum.LineJoinMode.Miter,
-                    Color = Library.Theme["Outline"]
-                }):AddToTheme({ Color = 'Outline' })
+                    PaddingLeft = UDim.new(0, 10),
+                    PaddingRight = UDim.new(0, 10),
+                    PaddingTop = UDim.new(0, 2),
+                    PaddingBottom = UDim.new(0, 2)
+                })
 
                 Library:Create("UIStroke", {
                     Name = "\0",
@@ -3011,7 +3021,7 @@ do
                     TextSize = Library.FontSize,
                     Parent = Items["Watermark"].Instance,
                     RichText = true,
-                    TextColor3 = Library.Theme["Text"],
+                    TextColor3 = Library.Theme["Accent"],
                     Text = PrefixText,
                     AnchorPoint = Vector2.new(0, 0.5),
                     Size = UDim2.new(0, 0, 0, 15),
@@ -3019,14 +3029,7 @@ do
                     Position = UDim2.new(0, 0, 0.5, 0),
                     BorderSizePixel = 0,
                     AutomaticSize = Enum.AutomaticSize.X
-                }):AddToTheme({ TextColor3 = 'Text' })
-
-                Library:Create("UIPadding", {
-                    Name = "\0",
-                    Parent = Items["Watermark"].Instance,
-                    PaddingRight = UDim.new(0, 8),
-                    PaddingLeft = UDim.new(0, 8)
-                })
+                }):AddToTheme({ TextColor3 = 'Accent' })
             end
 
             function Watermark:SetVisibility(Bool)
