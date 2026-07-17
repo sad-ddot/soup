@@ -3444,9 +3444,15 @@ do
             local preview_health = Library:Create("Frame", {
                 Name = "\0",
                 Parent = preview_health_bg.Instance,
-                BackgroundColor3 = Color3.new(0, 1, 0),
+                BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0,
                 ZIndex = 10
+            })
+
+            local preview_health_grad = Library:Create("UIGradient", {
+                Name = "\0",
+                Parent = preview_health.Instance,
+                Rotation = 90
             })
 
             local preview_dist = Library:Create("TextLabel", {
@@ -3479,21 +3485,20 @@ do
 
             local preview_skel_lines = {}
             local skel_connections = {
-                {"Head", "UpperTorso"},
-                {"UpperTorso", "LowerTorso"},
-                {"LeftHand", "LeftLowerArm"},
-                {"LeftLowerArm", "LeftUpperArm"},
-                {"LeftUpperArm", "UpperTorso"},
-                {"RightHand", "RightLowerArm"},
-                {"RightLowerArm", "RightUpperArm"},
-                {"RightUpperArm", "UpperTorso"},
-                {"LeftFoot", "LeftLowerLeg"},
-                {"LeftLowerLeg", "LeftUpperLeg"},
-                {"LeftUpperLeg", "LowerTorso"},
-                {"RightFoot", "RightLowerLeg"},
-                {"RightLowerLeg", "RightUpperLeg"},
-                {"RightUpperLeg", "LowerTorso"},
-                {"LowerTorso", "UpperTorso"}
+                {"Head", "NeckAttachment", "UpperTorso", "NeckAttachment"},
+                {"UpperTorso", "NeckAttachment", "LowerTorso", "WaistAttachment"},
+                {"LeftHand", "LeftWristAttachment", "LeftLowerArm", "LeftWristAttachment"},
+                {"LeftLowerArm", "LeftElbowAttachment", "LeftUpperArm", "LeftElbowAttachment"},
+                {"LeftUpperArm", "LeftShoulderAttachment", "UpperTorso", "LeftShoulderAttachment"},
+                {"RightHand", "RightWristAttachment", "RightLowerArm", "RightWristAttachment"},
+                {"RightLowerArm", "RightElbowAttachment", "RightUpperArm", "RightElbowAttachment"},
+                {"RightUpperArm", "RightShoulderAttachment", "UpperTorso", "RightShoulderAttachment"},
+                {"LeftFoot", "LeftAnkleAttachment", "LeftLowerLeg", "LeftAnkleAttachment"},
+                {"LeftLowerLeg", "LeftKneeAttachment", "LeftUpperLeg", "LeftKneeAttachment"},
+                {"LeftUpperLeg", "LeftHipAttachment", "LowerTorso", "LeftHipAttachment"},
+                {"RightFoot", "RightAnkleAttachment", "RightLowerLeg", "RightAnkleAttachment"},
+                {"RightLowerLeg", "RightKneeAttachment", "RightUpperLeg", "RightKneeAttachment"},
+                {"RightUpperLeg", "RightHipAttachment", "LowerTorso", "RightHipAttachment"}
             }
 
             for i = 1, #skel_connections do
@@ -3753,7 +3758,7 @@ do
                 end
             end
 
-            function Preview:SetHealth(visible, value)
+            function Preview:SetHealth(visible, value, top_color, bot_color)
                 preview_health_bg.Instance.Visible = visible == true
                 preview_health_bg.Instance.Position = UDim2.fromOffset(cx - w/2 - 6, cy)
                 preview_health_bg.Instance.Size = UDim2.fromOffset(2, h)
@@ -3761,6 +3766,17 @@ do
                     local pct = math.clamp(value / 100, 0, 1)
                     preview_health.Instance.Size = UDim2.new(1, 0, pct, 0)
                 end
+
+                local c_top = typeof(top_color) == "table" and top_color[1] or top_color
+                local c_bot = typeof(bot_color) == "table" and bot_color[1] or bot_color
+
+                if typeof(c_top) ~= "Color3" then c_top = Color3.fromRGB(0, 255, 100) end
+                if typeof(c_bot) ~= "Color3" then c_bot = Color3.fromRGB(255, 50, 50) end
+
+                preview_health_grad.Instance.Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, c_top),
+                    ColorSequenceKeypoint.new(1, c_bot)
+                })
             end
 
             function Preview:SetDistance(visible, color, text)
@@ -3791,6 +3807,14 @@ do
                 end
             end
 
+            local function get_attachment_world_pos(part, attachment_name)
+                local att = part:FindFirstChild(attachment_name)
+                if att and att:IsA("Attachment") then
+                    return part.CFrame:PointToWorldSpace(att.Position)
+                end
+                return part.Position
+            end
+
             function Preview:SetSkeleton(visible, color)
                 local viewmodel = Items["Viewport"].Instance:FindFirstChild("Viewmodel")
                 if not viewmodel or not visible then
@@ -3806,14 +3830,17 @@ do
                 end
 
                 for idx, conn in ipairs(skel_connections) do
-                    local p1_name, p2_name = conn[1], conn[2]
+                    local p1_name, p1_att, p2_name, p2_att = conn[1], conn[2], conn[3], conn[4]
                     local p1 = viewmodel:FindFirstChild(p1_name)
                     local p2 = viewmodel:FindFirstChild(p2_name)
                     local line = preview_skel_lines[idx]
 
                     if p1 and p2 and line then
-                        local pos1, on1 = project_point(p1.Position)
-                        local pos2, on2 = project_point(p2.Position)
+                        local wpos1 = get_attachment_world_pos(p1, p1_att)
+                        local wpos2 = get_attachment_world_pos(p2, p2_att)
+
+                        local pos1, on1 = project_point(wpos1)
+                        local pos2, on2 = project_point(wpos2)
 
                         if on1 and on2 then
                             local dir = pos2 - pos1
