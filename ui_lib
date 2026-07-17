@@ -3409,6 +3409,20 @@ do
                 Parent = Items["Background"].Instance,
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
+                Text = "@EnemyPlayer",
+                TextSize = 10,
+                FontFace = Library.Font,
+                TextColor3 = Color3.new(1, 1, 1),
+                TextXAlignment = Enum.TextXAlignment.Center,
+                ZIndex = 10,
+                Visible = false
+            })
+
+            local preview_display_name = Library:Create("TextLabel", {
+                Name = "\0",
+                Parent = Items["Background"].Instance,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
                 Text = "EnemyPlayer",
                 TextSize = 11,
                 FontFace = Library.Font,
@@ -3678,7 +3692,8 @@ do
 
                 for Original, Clone in pairs(RenderObjects) do
                     if Original and Original.Parent then
-                        Clone.CFrame = Original.CFrame
+                        -- Smooth lerp for CFrame replication to avoid micro-stuttering and bones overlapping
+                        Clone.CFrame = Clone.CFrame:Lerp(Original.CFrame, 0.45)
                     else
                         Preview:RemoveObject(Original)
                     end
@@ -3712,9 +3727,21 @@ do
                 end
             end
 
-            function Preview:SetName(visible, color, text)
+            function Preview:SetName(visible, color, text, display_visible, display_color, display_text)
+                preview_display_name.Instance.Visible = display_visible == true
+                preview_display_name.Instance.Position = UDim2.fromOffset(cx, cy - 24)
+                if display_text then
+                    preview_display_name.Instance.Text = tostring(display_text)
+                end
+                if display_color then
+                    local c = typeof(display_color) == "table" and display_color[1] or display_color
+                    if typeof(c) == "Color3" then
+                        preview_display_name.Instance.TextColor3 = c
+                    end
+                end
+
                 preview_name.Instance.Visible = visible == true
-                preview_name.Instance.Position = UDim2.fromOffset(cx, cy - 16)
+                preview_name.Instance.Position = UDim2.fromOffset(cx, cy - 12)
                 if text then
                     preview_name.Instance.Text = tostring(text)
                 end
