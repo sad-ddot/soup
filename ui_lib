@@ -1344,6 +1344,15 @@ do
                 end
             end
         end
+
+        -- Мгновенно обновляем все иконки и активные тексты выпадающих списков при изменении темы Accent
+        if Theme == "Accent" then
+            for _, Item in Library.ThemingStuff do
+                if Item.Item:IsA("TextButton") and Item.Properties.TextColor3 == "Accent" then
+                    Item.Item.TextColor3 = Color
+                end
+            end
+        end
     end
 
     Library.OnHover = function(Self, OnHoverEnter, OnHoverLeave)
@@ -8583,15 +8592,15 @@ do
                 if Bool then
                     Items["AccentBar"].Instance.BackgroundTransparency = 0
                     Items["TabIcon"]:ChangeItemTheme({ ImageColor3 = "Accent" })
-                    Items["TabIcon"]:Tween({ ImageColor3 = Library.Theme.Accent })
+                    Items["TabIcon"].Instance.ImageColor3 = Library.Theme.Accent
                     Items["TabOuter"]:ChangeItemTheme({ BackgroundColor3 = "Element" })
-                    Items["TabOuter"]:Tween({ BackgroundColor3 = Library.Theme["Element"] })
+                    Items["TabOuter"].Instance.BackgroundColor3 = Library.Theme["Element"]
                 else
                     Items["AccentBar"].Instance.BackgroundTransparency = 1
                     Items["TabIcon"]:ChangeItemTheme({ ImageColor3 = "Inactive Text" })
-                    Items["TabIcon"]:Tween({ ImageColor3 = Library.Theme["Inactive Text"] })
+                    Items["TabIcon"].Instance.ImageColor3 = Library.Theme["Inactive Text"]
                     Items["TabOuter"]:ChangeItemTheme({ BackgroundColor3 = "Background" })
-                    Items["TabOuter"]:Tween({ BackgroundColor3 = Library.Theme["Background"] })
+                    Items["TabOuter"].Instance.BackgroundColor3 = Library.Theme["Background"]
                 end
 
                 Items["Page"]:FadeDescendants(Bool, function()
@@ -8742,10 +8751,10 @@ do
 
                 if Bool then
                     Items["Inactive"]:ChangeItemTheme({ TextColor3 = "Accent" })
-                    Items["Inactive"]:Tween({ TextColor3 = Library.Theme.Accent })
+                    Items["Inactive"].Instance.TextColor3 = Library.Theme.Accent
                 else
                     Items["Inactive"]:ChangeItemTheme({ TextColor3 = "Text" })
-                    Items["Inactive"]:Tween({ TextColor3 = Library.Theme.Text })
+                    Items["Inactive"].Instance.TextColor3 = Library.Theme.Text
                 end
 
                 Items["Page"]:FadeDescendants(Bool, function()
