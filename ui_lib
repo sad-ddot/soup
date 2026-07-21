@@ -5121,6 +5121,78 @@ do
                 end
             end
 
+            -- ── Status API ───────────────────────────────────────────────────────
+            -- Fixed-slot status system. All statuses are pre-created in one pass
+            -- the first time SetStatus is called. Statuses live inside Items["Stuff"]
+            -- (UIListLayout, AutomaticSize Y) in a fixed order so they never overflow.
+            -- Main script calls SetStatus(name, visible) — no raw .Instance mutation.
+            do
+                local _slots      = {}   -- [name] = wrapped TextLabel object
+                local _colors     = {
+                    Manipulating = Color3.fromRGB(255, 200, 50),
+                    Manipulated  = Color3.fromRGB(180,  80, 255),
+                    Visible      = Color3.fromRGB( 80, 255, 120),
+                    Unvisible    = Color3.fromRGB(255,  80,  80),
+                    Hitscanned   = Color3.fromRGB(112, 255, 247),
+                    Mogging      = Color3.fromRGB(255, 200,  50),
+                }
+                local _order      = {"Manipulating","Manipulated","Visible","Unvisible","Hitscanned","Mogging"}
+                local _ready      = false
+
+                local function _init()
+                    if _ready then return end
+                    _ready = true
+                    for _, name in ipairs(_order) do
+                        local ok, item = pcall(function()
+                            return Library:Create("TextLabel", {
+                                Name              = "\0",
+                                FontFace          = Library.Font,
+                                TextSize          = Library.FontSize,
+                                Parent            = Items["Stuff"].Instance,
+                                TextColor3        = _colors[name] or Library.Theme["Text"],
+                                Text              = name,
+                                Size              = UDim2.new(1, -90, 0, 15),
+                                BackgroundTransparency = 1,
+                                TextXAlignment    = Enum.TextXAlignment.Left,
+                                Position          = UDim2.new(0, 80, 0, 24),
+                                BorderSizePixel   = 0,
+                                Visible           = false,
+                            })
+                        end)
+                        if ok and item then
+                            _slots[name] = item
+                        end
+                    end
+                end
+
+                -- SetStatus(name, visible, color?)
+                -- name    : one of the keys in _order
+                -- visible : bool
+                -- color   : optional Color3 override
+                function Indicator:SetStatus(name, visible, color)
+                    _init()
+                    local slot = _slots[name]
+                    if not slot or not slot.Instance then return end
+                    pcall(function()
+                        slot.Instance.TextColor3 = (typeof(color) == "Color3" and color)
+                            or _colors[name]
+                            or Library.Theme["Text"]
+                        slot.Instance.Visible = visible == true
+                    end)
+                end
+
+                -- HideAllStatuses() — call on target loss
+                function Indicator:HideAllStatuses()
+                    for _, name in ipairs(_order) do
+                        local slot = _slots[name]
+                        if slot and slot.Instance then
+                            pcall(function() slot.Instance.Visible = false end)
+                        end
+                    end
+                end
+            end
+            -- ─────────────────────────────────────────────────────────────────────
+
             Library:RegisterLayout("TargetIndicator", {
                 Instance = Items["TargetIndicator"].Instance
             })
