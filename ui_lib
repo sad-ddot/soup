@@ -4818,7 +4818,6 @@ do
                     Parent = Library.Holder.Instance,
                     Position = UDim2.new(0.4242021143436432, 0, 0.7932242751121521, 0),
                     Size = UDim2.new(0, 256, 0, 110),
-                    AutomaticSize = Enum.AutomaticSize.Y,
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Background"]
                 }):AddToTheme({ BackgroundColor3 = 'Background' })
@@ -5134,9 +5133,10 @@ do
                     Manipulated  = Color3.fromRGB(180,  80, 255),
                     Visible      = Color3.fromRGB( 80, 255, 120),
                     Unvisible    = Color3.fromRGB(255,  80,  80),
+                    Hitscanned   = Color3.fromRGB(112, 255, 247),
                     Mogging      = Color3.fromRGB(255, 200,  50),
                 }
-                local _order      = {"Manipulating","Manipulated","Visible","Unvisible","Mogging"}
+                local _order      = {"Manipulating","Manipulated","Visible","Hitscanned","Unvisible","Mogging"}
                 local _ready      = false
 
                 local function _init()
@@ -5193,41 +5193,6 @@ do
             end
             -- ─────────────────────────────────────────────────────────────────────
 
-            -- ── Hitscanned: separate label at BOTTOM of widget, outside Stuff frame ──
-            -- Grows the widget height via AutomaticSize.Y
-            do
-                local _hitscan_label = Library:Create("TextLabel", {
-                    Name             = "\0",
-                    FontFace         = Library.Font,
-                    TextSize         = Library.FontSize,
-                    Parent           = Items["TargetIndicator"].Instance,
-                    TextColor3       = Color3.fromRGB(112, 255, 247),
-                    Text             = "Hitscanned",
-                    AnchorPoint      = Vector2.new(0, 0),
-                    Position         = UDim2.new(0, 80, 1, 4),
-                    Size             = UDim2.new(1, -90, 0, 14),
-                    BackgroundTransparency = 1,
-                    TextXAlignment   = Enum.TextXAlignment.Left,
-                    BorderSizePixel  = 0,
-                    ZIndex           = 5,
-                    Visible          = false,
-                })
-
-                function Indicator:SetHitscanned(visible)
-                    pcall(function()
-                        _hitscan_label.Instance.Visible = visible == true
-                        -- Add bottom padding when visible so widget auto-grows cleanly
-                        Items["TargetIndicator"].Instance.Size = visible
-                            and UDim2.new(0, 256, 0, 110)
-                            or  UDim2.new(0, 256, 0, 110)
-                        -- AutomaticSize.Y handles the rest
-                    end)
-                end
-
-                function Indicator:HideHitscanned()
-                    pcall(function() _hitscan_label.Instance.Visible = false end)
-                end
-            end
 
             Library:RegisterLayout("TargetIndicator", {
                 Instance = Items["TargetIndicator"].Instance
