@@ -8914,8 +8914,8 @@ do
                     Name = "\0",
                     Parent = Items["Section"].Instance,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 14, 0, 54),
-                    Size = UDim2.new(1, -28, 0, 0),
+                    Position = UDim2.new(0, 36, 0, 15),
+                    Size = UDim2.new(1, -72, 0, 0),
                     BorderSizePixel = 0,
                     AutomaticSize = Enum.AutomaticSize.Y
                 })
@@ -8930,40 +8930,29 @@ do
                 Library:Create("UIPadding", {
                     Name = "\0",
                     Parent = Items["Content"].Instance,
-                    PaddingBottom = UDim.new(0, 14)
+                    PaddingBottom = UDim.new(0, 20)
                 })
-
-                Items["Header"] = Library:Create("Frame", {
-                    Name = "\0",
-                    Parent = Items["Section"].Instance,
-                    Size = UDim2.new(1, 0, 0, 42),
-                    BorderSizePixel = 0,
-                    BackgroundTransparency = 1
-                })
-
-                Items["HeaderDivider"] = Library:Create("Frame", {
-                    Name = "\0",
-                    Parent = Items["Header"].Instance,
-                    Position = UDim2.new(0, 0, 1, -1),
-                    Size = UDim2.new(1, 0, 0, 1),
-                    BorderSizePixel = 0,
-                    BackgroundColor3 = Library.Theme["Border"]
-                }):AddToTheme({ BackgroundColor3 = "Border" })
 
                 Items["Text"] = Library:Create("TextLabel", {
                     Name = "\0",
                     FontFace = Library.Font,
-                    TextSize = Library.FontSize + 2,
-                    Parent = Items["Header"].Instance,
+                    TextSize = Library.FontSize,
+                    Parent = Items["SectionOutline"].Instance,
                     TextColor3 = Library.Theme["Text"],
                     Text = Section.Name,
-                    Position = UDim2.new(0, 14, 0, 0),
-                    Size = UDim2.new(1, -28, 1, -1),
+                    Size = UDim2.new(0, 0, 0, 4),
+                    Position = UDim2.new(0, 6, 0, 0),
                     BorderSizePixel = 0,
-                    BackgroundTransparency = 1,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextYAlignment = Enum.TextYAlignment.Center
-                }):AddToTheme({ TextColor3 = "Text" })
+                    AutomaticSize = Enum.AutomaticSize.X,
+                    BackgroundColor3 = Library.Theme["Section"]
+                }):AddToTheme({ BackgroundColor3 = 'Section' })
+
+                Library:Create("UIPadding", {
+                    Name = "\0",
+                    Parent = Items["Text"].Instance,
+                    PaddingRight = UDim.new(0, 4),
+                    PaddingLeft = UDim.new(0, 4)
+                })
 
                 Section.Items = Items
             end
