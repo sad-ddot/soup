@@ -8001,6 +8001,7 @@ do
                     Position = UDim2.new(0.5, 0, 0.5, 0),
                     Size = UDim2.new(0, 552, 0, 451),
                     BorderSizePixel = 0,
+                    ClipsDescendants = true,
                     BackgroundColor3 = Library.Theme["Background"]
                 }):AddToTheme({ BackgroundColor3 = 'Background' })
 
@@ -9033,6 +9034,7 @@ do
                     Position = UDim2.new(0, 0, 0.5, 0),
                     Size = UDim2.new(0, 18, 0, 18),
                     BorderSizePixel = 0,
+                    ClipsDescendants = true,
                     BackgroundColor3 = Library.Theme["Element"]
                 }):AddToTheme({ BackgroundColor3 = 'Element' })
 
