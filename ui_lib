@@ -323,6 +323,20 @@ do
             Data.Instance[Index] = Property
         end
 
+        local RoundedClasses = {
+            Frame = true,
+            TextButton = true,
+            TextBox = true,
+            ScrollingFrame = true
+        }
+
+        if RoundedClasses[Class] and Properties.BackgroundTransparency ~= 1 and not Properties.NoCorner then
+            local Corner = Instance.new("UICorner")
+            Corner.Name = "\0"
+            Corner.CornerRadius = UDim.new(0, Properties.CornerRadius or 4)
+            Corner.Parent = Data.Instance
+        end
+
         return setmetatable(Data, Library)
     end
 
@@ -8988,8 +9002,8 @@ do
             end
 
             local Items = {}
-            local ToggleButtonOffset = Toggle.Section.IsSettings and 0 or 20
-            local ToggleTextOffset = Toggle.Section.IsSettings and 14 or 20
+            local ToggleButtonOffset = Toggle.Section.IsSettings and 0 or 25
+            local ToggleTextOffset = Toggle.Section.IsSettings and 19 or 25
             do
                 Items["Toggle"] = Library:Create("TextButton", {
                     Name = "\0",
@@ -9001,7 +9015,7 @@ do
                     AutoButtonColor = false,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, -ToggleButtonOffset, 0, 0),
-                    Size = UDim2.new(1, ToggleButtonOffset, 0, 12),
+                    Size = UDim2.new(1, ToggleButtonOffset, 0, 18),
                     BorderSizePixel = 0
                 })
 
@@ -9017,10 +9031,38 @@ do
                     Parent = Items["Toggle"].Instance,
                     AnchorPoint = Vector2.new(0, 0.5),
                     Position = UDim2.new(0, 0, 0.5, 0),
-                    Size = UDim2.new(0, 8, 0, 8),
+                    Size = UDim2.new(0, 18, 0, 18),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Element"]
                 }):AddToTheme({ BackgroundColor3 = 'Element' })
+
+                Items["Checkmark"] = Library:Create("ImageLabel", {
+                    Name = "\0",
+                    Parent = Items["Indicator"].Instance,
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                    Size = UDim2.new(0, 13, 0, 13),
+                    BorderSizePixel = 0,
+                    BackgroundTransparency = 1,
+                    Image = "rbxassetid://14189590169",
+                    ImageColor3 = Color3.fromRGB(255, 245, 231),
+                    ImageTransparency = 1,
+                    ZIndex = 4
+                })
+
+                Items["ToggleGlow"] = Library:Create("ImageLabel", {
+                    Name = "\0",
+                    Parent = Items["Toggle"].Instance,
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Position = UDim2.new(0, -4, 0.5, 0),
+                    Size = UDim2.new(0, 26, 0, 26),
+                    BorderSizePixel = 0,
+                    BackgroundTransparency = 1,
+                    Image = "rbxassetid://5028857084",
+                    ImageColor3 = Library.Theme["Accent"],
+                    ImageTransparency = 1,
+                    ZIndex = 1
+                }):AddToTheme({ ImageColor3 = "Accent" })
 
                 Library:Create("UIStroke", {
                     Name = "\0",
@@ -9093,13 +9135,19 @@ do
                 Toggle.Value = Bool
 
                 if Bool then
+                    Items["Indicator"]:Tween({ BackgroundColor3 = Library.Theme["Accent"] })
                     Items["Inline"]:Tween({ BackgroundTransparency = 0, Size = UDim2.new(1, 0, 1, 0) })
+                    Items["Checkmark"]:Tween({ ImageTransparency = 0 })
+                    Items["ToggleGlow"]:Tween({ ImageTransparency = 0.78 })
                     if not Toggle.Risky then
                         Items["Text"]:ChangeItemTheme({ TextColor3 = "Text" })
                         Items["Text"]:Tween({ TextColor3 = Library.Theme.Text })
                     end
                 else
                     Items["Inline"]:Tween({ BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0) })
+                    Items["Checkmark"]:Tween({ ImageTransparency = 1 })
+                    Items["ToggleGlow"]:Tween({ ImageTransparency = 1 })
+                    Items["Indicator"]:Tween({ BackgroundColor3 = Library.Theme["Element"] })
                     if not Toggle.Risky then
                         Items["Text"]:ChangeItemTheme({ TextColor3 = "Inactive Text" })
                         Items["Text"]:Tween({ TextColor3 = Library.Theme["Inactive Text"] })
