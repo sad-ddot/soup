@@ -8610,7 +8610,11 @@ do
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     ImageColor3 = Library.Theme["Inactive Text"]
-                }):AddToTheme({ ImageColor3 = "Inactive Text" })
+                }):AddToTheme({
+                    ImageColor3 = function()
+                        return Page.Active and Library.Theme["Accent"] or Library.Theme["Inactive Text"]
+                    end
+                })
 
                 Items["AccentBar"] = Library:Create("Frame", {
                     Name = "\0",
