@@ -1296,6 +1296,10 @@ do
         Element:Refresh(ReturnList)
     end
 
+    -- ThemeIndex: reverse map [theme_key] = {{Item, Property}, ...}
+    -- Replaces O(n) full-scan in ChangeTheme with O(k) targeted update
+    Library.ThemeIndex = {}
+
     Library.AddToTheme = function(Self, Properties)
         local Object = Self.Instance
 
@@ -1309,14 +1313,27 @@ do
                 if not Library.Theme[Value] then
                     Object[Property] = Value
                 end
-
                 Object[Property] = Library.Theme[Value]
+
+                -- Index by theme key for O(k) ChangeTheme
+                local key = Value
+                if not Library.ThemeIndex[key] then
+                    Library.ThemeIndex[key] = {}
+                end
+                table.insert(Library.ThemeIndex[key], {Item=Object, Property=Property})
             else
                 Object[Property] = Value()
             end
         end
 
-        table.insert(Library.ThemingStuff, ThemeData)
+        -- Only store function-based properties in ThemingStuff (string ones are in ThemeIndex)
+        local has_fn = false
+        for _, v in ThemeData.Properties do
+            if type(v) == "function" then has_fn = true; break end
+        end
+        if has_fn then
+            table.insert(Library.ThemingStuff, ThemeData)
+        end
         Library.ThemeMap[Object] = ThemeData
         return Self
     end
@@ -1335,21 +1352,27 @@ do
     Library.ChangeTheme = function(Self, Theme, Color)
         Library.Theme[Theme] = Color
 
-        for _, Item in Library.ThemingStuff do
-            for Property, Value in Item.Properties do
-                if type(Value) == "string" and Value == Theme then
-                    Item.Item[Property] = Color
-                elseif type(Value) == "function" then
-                    Item.Item[Property] = Value()
-                end
+        -- O(k): only update items registered for this specific theme key
+        local indexed = Library.ThemeIndex and Library.ThemeIndex[Theme]
+        if indexed then
+            for _, entry in ipairs(indexed) do
+                pcall(function()
+                    if entry.Item and entry.Item.Parent then
+                        entry.Item[entry.Property] = Color
+                    end
+                end)
             end
         end
 
-        -- Мгновенно обновляем все иконки и активные тексты выпадающих списков при изменении темы Accent
-        if Theme == "Accent" then
-            for _, Item in Library.ThemingStuff do
-                if Item.Item:IsA("TextButton") and Item.Properties.TextColor3 == "Accent" then
-                    Item.Item.TextColor3 = Color
+        -- Function-based properties still need a full scan (rare, small list)
+        for _, Item in Library.ThemingStuff do
+            for Property, Value in Item.Properties do
+                if type(Value) == "function" then
+                    pcall(function()
+                        if Item.Item and Item.Item.Parent then
+                            Item.Item[Property] = Value()
+                        end
+                    end)
                 end
             end
         end
