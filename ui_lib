@@ -8691,13 +8691,11 @@ do
 
                 if Bool then
                     Items["AccentBar"].Instance.BackgroundTransparency = 0
-                    Items["TabIcon"]:ChangeItemTheme({ ImageColor3 = "Accent" })
-                    Items["TabIcon"].Instance.ImageColor3 = Library.Theme.Accent
+                    Items["TabIcon"].Instance.ImageColor3 = Library.Theme["Accent"]
                     Items["TabOuter"]:ChangeItemTheme({ BackgroundColor3 = "Element" })
                     Items["TabOuter"].Instance.BackgroundColor3 = Library.Theme["Element"]
                 else
                     Items["AccentBar"].Instance.BackgroundTransparency = 1
-                    Items["TabIcon"]:ChangeItemTheme({ ImageColor3 = "Inactive Text" })
                     Items["TabIcon"].Instance.ImageColor3 = Library.Theme["Inactive Text"]
                     Items["TabOuter"]:ChangeItemTheme({ BackgroundColor3 = "Background" })
                     Items["TabOuter"].Instance.BackgroundColor3 = Library.Theme["Background"]
