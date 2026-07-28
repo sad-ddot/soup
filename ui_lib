@@ -112,6 +112,16 @@ local function keyFromString(value)
     return nil
 end
 
+local function colorValue(value, fallback)
+    if typeof(value) == "Color3" then return value end
+    if type(value) == "table" then
+        if typeof(value[1]) == "Color3" then return value[1] end
+        if typeof(value.Color) == "Color3" then return value.Color end
+        if value.r and value.g and value.b then return Color3.new(tonumber(value.r) or 1, tonumber(value.g) or 1, tonumber(value.b) or 1) end
+    end
+    return fallback
+end
+
 local b64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local b64Lookup = {}
 for i = 1, #b64Chars do b64Lookup[b64Chars:byte(i)] = i - 1 end
@@ -286,6 +296,12 @@ function Library:Window(data)
     connect(RunService.RenderStepped, function()
         if not main.Visible then return end
         logo.Position = UDim2.fromOffset(10, 1 + math.sin(os.clock() * 1.8) * 2)
+        local activeTab = window.Tabs[window.CurrentPage]
+        if activeTab and activeTab.AbsoluteSize.X > 0 then
+            underline.BackgroundTransparency = 0
+            underline.Position = UDim2.fromOffset(activeTab.AbsolutePosition.X - main.AbsolutePosition.X, 33)
+            underline.Size = UDim2.fromOffset(activeTab.AbsoluteSize.X, 2)
+        end
     end)
     return window
 end
@@ -294,12 +310,14 @@ function WindowMethods:SetOpen(value)
     self.Open = value == true
     if self.Open then
         self.Main.Visible = true
+        if self.ESPPreviewObject and self.ESPPreviewObject.Visible then self.ESPPreviewObject.Frame.Visible = true end
         self.Main.GroupTransparency = 1
         local targetScale = Library.UIScale or 1
         if self.MainScale then self.MainScale.Scale = targetScale * 0.985 end
         tween(self.Main, {GroupTransparency = 0}, 0.18)
         if self.MainScale then tween(self.MainScale, {Scale = targetScale}, 0.18, Enum.EasingStyle.Back) end
     else
+        if self.ESPPreviewObject then self.ESPPreviewObject.Frame.Visible = false end
         for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
         Library.OpenFrames = {}
         if self.MainScale then tween(self.MainScale, {Scale = (Library.UIScale or 1) * 0.985}, 0.16) end
@@ -562,7 +580,7 @@ function SectionMethods:Checkbox(name, default, callback)
         if not value then tween(label, {TextColor3 = Library.Theme.Dim}, 0.12) end
     end)
     connect(row.MouseButton1Click, function() apply(not value) end)
-    function control:Set(newValue) apply(newValue, true) end
+    function control:Set(newValue, silent) apply(newValue, silent == true) end
     function control:Get() return value end
     Library.Flags[flag] = value
     return control
@@ -576,7 +594,7 @@ function SectionMethods:Toggle(data)
         Library:SafeCall(data.Callback, value)
     end)
     Library.Flags[flag] = data.Default == true
-    Library.SetFlags[flag] = function(value) control:Set(value) Library:SafeCall(data.Callback, value == true) end
+    Library.SetFlags[flag] = function(value) control:Set(value) end
     local sectionWindow = self.Window
     local sectionObject = self
     function control:Colorpicker(colorData)
@@ -732,10 +750,23 @@ function Library:CreateKeybind(data)
     local open = false
     local capture = false
     local modeButtons = {}
+    local modeLines = {}
+    local function paintModes()
+        for modeName, btn in pairs(modeButtons) do
+            local on = modeName == bind.Mode
+            btn.TextColor3 = on and Library.Theme.Accent or Color3.fromRGB(255, 255, 255)
+            btn.BackgroundTransparency = on and 0.9 or 1
+            if modeLines[modeName] then
+                modeLines[modeName].Visible = on
+                modeLines[modeName].BackgroundColor3 = Library.Theme.Accent
+            end
+        end
+    end
     local function updateFlag()
         bind.Value = bind.Key and keyName(bind.Key) or "None"
         button.Text = bind.Value
         bind.active = bind.Toggled
+        paintModes()
         Library.Flags[flag] = bind
         Library:SafeCall(data.Callback, bind.Toggled)
         if Library.KeyListRefresh then Library.KeyListRefresh() end
@@ -744,7 +775,7 @@ function Library:CreateKeybind(data)
         bind.Mode = mode
         bind.Toggled = mode == "Always"
         bind.active = bind.Toggled
-        for _, btn in pairs(modeButtons) do btn.TextColor3 = Color3.fromRGB(255, 255, 255) end
+        paintModes()
         updateFlag()
     end
     local function closePopup()
@@ -775,12 +806,16 @@ function Library:CreateKeybind(data)
     end)
     for _, mode in ipairs({"Hold", "Toggle", "Always"}) do
         local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9102}, popupContent)
-        new("UIPadding", {PaddingLeft = UDim.new(0, 8)}, option)
+        new("UIPadding", {PaddingLeft = UDim.new(0, 10)}, option)
+        local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
+        round(line, 2)
         modeButtons[mode] = option
-        connect(option.MouseEnter, function() tween(option, {BackgroundTransparency = 0.86}, 0.1) end)
-        connect(option.MouseLeave, function() tween(option, {BackgroundTransparency = 1}, 0.1) end)
+        modeLines[mode] = line
+        connect(option.MouseEnter, function() if bind.Mode ~= mode then tween(option, {BackgroundTransparency = 0.86}, 0.1) end end)
+        connect(option.MouseLeave, function() if bind.Mode ~= mode then tween(option, {BackgroundTransparency = 1}, 0.1) end end)
         connect(option.MouseButton1Click, function() setMode(mode) closePopup() end)
     end
+    paintModes()
     connect(button.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then if open then closePopup() else openPopup() end end
     end)
@@ -972,8 +1007,12 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         return multi and currentSet[option] == true or (not multi and option == current)
     end
     local function paint()
-        for option, label in pairs(labels) do
-            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        for option, item in pairs(labels) do
+            local on = isSelected(option)
+            item.Label.TextColor3 = on and Library.Theme.Accent or Color3.fromRGB(255, 255, 255)
+            item.Line.Visible = on
+            item.Row.BackgroundTransparency = on and 0.9 or 1
+            item.Line.BackgroundColor3 = Library.Theme.Accent
         end
     end
     local function updateValue(silent)
@@ -1018,10 +1057,12 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         end
         for _, option in ipairs(options) do
             local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9003}, scroll)
-            local label = new("TextLabel", {Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9004}, row)
-            labels[option] = label
-            connect(row.MouseEnter, function() tween(row, {BackgroundTransparency = 0.88}, 0.1) end)
-            connect(row.MouseLeave, function() tween(row, {BackgroundTransparency = 1}, 0.1) end)
+            local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9004}, row)
+            round(line, 2)
+            local label = new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9004}, row)
+            labels[option] = {Label = label, Line = line, Row = row}
+            connect(row.MouseEnter, function() if not isSelected(option) then tween(row, {BackgroundTransparency = 0.88}, 0.1) end end)
+            connect(row.MouseLeave, function() if not isSelected(option) then tween(row, {BackgroundTransparency = 1}, 0.1) end end)
             connect(row.MouseButton1Click, function()
                 if multi then currentSet[option] = not currentSet[option] else current = option close() end
                 updateValue()
@@ -1079,11 +1120,11 @@ function SectionMethods:Textbox(data)
     local flag = data.Flag or data.Name or "Textbox"
     local holder = new("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1}, self.Body)
     new("TextLabel", {Size = UDim2.new(1, 0, 0, 12), BackgroundTransparency = 1, Text = tostring(data.Name or flag), TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, holder)
-    local box = new("TextBox", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 15), BackgroundTransparency = 1, BorderSizePixel = 0, Text = tostring(data.Default or ""), PlaceholderText = tostring(data.Placeholder or ""), PlaceholderColor3 = Library.Theme.Dim, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false}, holder)
-    local bg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = box.ZIndex - 1}, box)
+    local bg = new("Frame", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 15), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1}, holder)
     round(bg, 4)
     stroke(bg, Library.Theme.Stroke, 0.1)
     new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, bg)
+    local box = new("TextBox", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 15), BackgroundTransparency = 1, BorderSizePixel = 0, Text = tostring(data.Default or ""), PlaceholderText = tostring(data.Placeholder or ""), PlaceholderColor3 = Library.Theme.Dim, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false, ZIndex = 2}, holder)
     new("UIPadding", {PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)}, box)
     Library.Flags[flag] = box.Text
     connect(box.FocusLost, function()
@@ -1354,28 +1395,39 @@ function Library:ESPPreview(params)
         healthText.Text = tostring(math.floor(healthCurrent * 100 + 0.5))
     end)
     local highlight
-    function preview:SetVisibility(value) frame.Visible = value == true end
+    function preview:SetVisibility(value)
+        preview.Visible = value == true
+        frame.Visible = preview.Visible and (not window or window.Main.Visible)
+    end
     function preview:SetText(value) title.Text = text(value) end
     function preview:RemoveObject(object) if object then pcall(function() object:Destroy() end) end end
     function preview:AddObject(object) if object then object.Parent = viewport end end
     function preview:BuildFromModel(model)
         if preview.Player then pcall(function() preview.Player:Destroy() end) end
         if not model then return end
+        local oldArchivable = model.Archivable
+        pcall(function() model.Archivable = true end)
         local clone = model:Clone()
+        pcall(function() model.Archivable = oldArchivable end)
+        if not clone then return end
+        for _, item in ipairs(clone:GetDescendants()) do
+            if item:IsA("Script") or item:IsA("LocalScript") then item:Destroy() end
+        end
         clone.Parent = viewport
         preview.Player = clone
         local root = clone:FindFirstChild("HumanoidRootPart") or clone:FindFirstChildWhichIsA("BasePart")
         if root then clone:PivotTo(CFrame.new(0, 1.8, 0)) end
+        camera.CFrame = CFrame.new(Vector3.new(0, 2, 7), Vector3.new(0, 2, 0))
     end
     function preview:SetBox(visible, color, fillVisible, fillColor)
         box.Visible = visible == true
-        box.UIStroke.Color = color or Library.Theme.Accent
+        box.UIStroke.Color = colorValue(color, Library.Theme.Accent)
         fill.Visible = fillVisible == true
-        fill.BackgroundColor3 = fillColor or color or Library.Theme.Accent
+        fill.BackgroundColor3 = colorValue(fillColor, colorValue(color, Library.Theme.Accent))
     end
     function preview:SetName(visible, color, value)
         name.Visible = visible == true
-        name.TextColor3 = color or Library.Theme.Text
+        name.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then name.Text = tostring(value) end
     end
     function preview:SetHealth(visible, value, topColor, bottomColor, counterVisible)
@@ -1384,8 +1436,8 @@ function Library:ESPPreview(params)
         local numeric = tonumber(value) or healthTarget
         if numeric > 1 then numeric = numeric / 100 end
         healthTarget = math.clamp(numeric, 0, 1)
-        if typeof(topColor) == "Color3" then healthTop = topColor elseif typeof(bottomColor) == "Color3" then healthTop = bottomColor end
-        if typeof(bottomColor) == "Color3" then healthBottom = bottomColor end
+        healthTop = colorValue(topColor, colorValue(bottomColor, healthTop))
+        healthBottom = colorValue(bottomColor, healthBottom)
     end
     function preview:SetHealthCounter(visible)
         healthText.Visible = visible == true
@@ -1395,30 +1447,45 @@ function Library:ESPPreview(params)
     end
     function preview:SetDistance(visible, color, value)
         distance.Visible = visible == true
-        distance.TextColor3 = color or Library.Theme.Text
+        distance.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then distance.Text = tostring(value) end
     end
     function preview:SetWeapon(visible, color, value)
         weapon.Visible = visible == true
-        weapon.TextColor3 = color or Library.Theme.Text
+        weapon.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then weapon.Text = tostring(value) end
     end
     function preview:SetSkeleton() end
-    function preview:SetChams(visible, fillColor, outlineColor)
+    function preview:SetChams(visible, fillColor, outlineEnabled, outlineColor)
         if not preview.Player then return end
         if not highlight then
             highlight = Instance.new("Highlight")
             highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             highlight.Parent = viewport
         end
+        if typeof(outlineEnabled) == "Color3" or type(outlineEnabled) == "table" then
+            outlineColor = outlineEnabled
+            outlineEnabled = true
+        end
         highlight.Adornee = preview.Player
         highlight.Enabled = visible == true
-        highlight.FillColor = fillColor or Library.Theme.Accent
-        highlight.OutlineColor = outlineColor or Color3.new(1, 1, 1)
+        highlight.FillColor = colorValue(fillColor, Library.Theme.Accent)
+        highlight.OutlineColor = colorValue(outlineColor, Color3.new(1, 1, 1))
+        highlight.OutlineTransparency = outlineEnabled == false and 1 or 0
     end
     preview.Items.Frame = frame
     preview.Viewport = viewport
     preview.ViewportCamera = camera
+    preview.Frame = frame
+    preview.Visible = true
+    if window then window.ESPPreviewObject = preview end
+    task.defer(function()
+        if LocalPlayer.Character then preview:BuildFromModel(LocalPlayer.Character) end
+    end)
+    connect(LocalPlayer.CharacterAdded, function(character)
+        task.wait(1)
+        if preview.Frame and preview.Frame.Parent then preview:BuildFromModel(character) end
+    end)
     return preview
 end
 
@@ -1493,7 +1560,7 @@ function Library:TargetIndicator()
         end
         indicator.CurrentStatus = key
         status.Text = key
-        status.TextColor3 = color or Library.Theme.Accent
+        status.TextColor3 = colorValue(color, Library.Theme.Accent)
         status.Visible = true
     end
     function indicator:HideAllStatuses()
@@ -1654,16 +1721,54 @@ end
 
 function Library:ChangeTheme(key, value)
     if typeof(value) ~= "Color3" then return end
-    local map = {Background = "Bg", Section = "Panel", Element = "Input", Outline = "Stroke", Risky = "Bad"}
+    local map = {Background = "Bg", Section = "Header", Element = "Input", Outline = "Stroke", Risky = "Bad"}
     local target = map[key] or key
+    local old = self.Theme[target]
+    local extras = {}
+    if target == "Accent" then
+        extras[#extras + 1] = self.Theme.Accent2
+        extras[#extras + 1] = Color3.fromRGB(112, 151, 235)
+    end
     self.Theme[target] = value
+    if key == "Section" then self.Theme.Panel = value end
     if target == "Bad" then self.Theme.Risky = value end
     if target == "Accent" then self.Theme.Accent2 = value end
+    local function close(a, b)
+        if typeof(a) ~= "Color3" or typeof(b) ~= "Color3" then return false end
+        return math.abs(a.R - b.R) < 0.004 and math.abs(a.G - b.G) < 0.004 and math.abs(a.B - b.B) < 0.004
+    end
+    local function shouldReplace(color)
+        if close(color, old) then return true end
+        for _, extra in ipairs(extras) do if close(color, extra) then return true end end
+        return false
+    end
+    local function patchGradient(gradient)
+        local sequence = gradient.Color
+        local points = {}
+        local changed = false
+        for _, point in ipairs(sequence.Keypoints) do
+            local color = point.Value
+            if shouldReplace(color) then color = value changed = true end
+            points[#points + 1] = ColorSequenceKeypoint.new(point.Time, color)
+        end
+        if changed then gradient.Color = ColorSequence.new(points) end
+    end
+    for _, window in ipairs(self.Windows) do
+        for _, object in ipairs(window.Gui:GetDescendants()) do
+            pcall(function() if object.BackgroundColor3 and shouldReplace(object.BackgroundColor3) then object.BackgroundColor3 = value end end)
+            pcall(function() if object.TextColor3 and shouldReplace(object.TextColor3) then object.TextColor3 = value end end)
+            pcall(function() if object.ImageColor3 and shouldReplace(object.ImageColor3) then object.ImageColor3 = value end end)
+            pcall(function() if object.ScrollBarImageColor3 and shouldReplace(object.ScrollBarImageColor3) then object.ScrollBarImageColor3 = value end end)
+            pcall(function() if object:IsA("UIStroke") and shouldReplace(object.Color) then object.Color = value end end)
+            pcall(function() if object:IsA("UIGradient") then patchGradient(object) end end)
+        end
+    end
 end
 
 local function configPath(name)
     name = tostring(name or "default"):gsub("%.json$", "")
-    name = name:gsub("[^%w%._%- ]", "_")
+    name = name:gsub("[/\]", "_"):gsub("[%c%:%*%?%"%<%>%|]", "_")
+    name = name:gsub("^%s+", ""):gsub("%s+$", "")
     if name == "" then name = "default" end
     return Library.Folders.Configs .. "/" .. name .. ".json", name
 end
