@@ -34,6 +34,7 @@ local Library = {
         Dim = Color3.fromRGB(139, 139, 139),
         Bad = Color3.fromRGB(220, 80, 85),
         Risky = Color3.fromRGB(220, 80, 85),
+        RiskyText = Color3.fromRGB(255, 220, 70),
     },
 }
 
@@ -557,9 +558,12 @@ function PageMethods:SubPage(data)
     return object
 end
 
-function SectionMethods:Checkbox(name, default, callback)
+function SectionMethods:Checkbox(name, default, callback, style)
     local flag = name
     local value = default == true
+    style = style or {}
+    local risky = style.Risky == true or style.Unstable == true or style.Risk == true
+    local riskyColor = style.Color or Library.Theme.RiskyText or Color3.fromRGB(255, 220, 70)
     local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Text = "", AutoButtonColor = false}, self.Body)
     local box = new("Frame", {Size = UDim2.fromOffset(13, 13), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, row)
     round(box, 2)
@@ -574,7 +578,7 @@ function SectionMethods:Checkbox(name, default, callback)
     end
     local bloom = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = box.ZIndex + 1}, box)
     round(bloom, 3)
-    local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = value and Library.Theme.Text or Library.Theme.Dim, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left}, row)
+    local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left}, row)
     local control = {Instance = row}
     local function apply(newValue, silent)
         value = newValue == true
@@ -582,17 +586,17 @@ function SectionMethods:Checkbox(name, default, callback)
         gradient.Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
         boxStroke.Color = value and Library.Theme.Accent or Library.Theme.Stroke
         bloom.BackgroundColor3 = Library.Theme.Accent
-        tween(label, {TextColor3 = value and Library.Theme.Text or Library.Theme.Dim}, 0.14)
+        tween(label, {TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim)}, 0.14)
         for i, gs in ipairs(glowStrokes) do gs.Color = Library.Theme.Accent tween(gs, {Transparency = value and (0.6 + i * 0.1) or 1}, 0.14) end
         tween(bloom, {BackgroundTransparency = value and 0.9 or 1}, 0.14)
         if value then scale.Scale = 0.82 tween(scale, {Scale = 1}, 0.2) end
         if not silent then Library:SafeCall(callback, value) end
     end
     connect(row.MouseEnter, function()
-        if not value then tween(label, {TextColor3 = Library.Theme.Text}, 0.12) end
+        if not value and not risky then tween(label, {TextColor3 = Library.Theme.Text}, 0.12) end
     end)
     connect(row.MouseLeave, function()
-        if not value then tween(label, {TextColor3 = Library.Theme.Dim}, 0.12) end
+        if not value and not risky then tween(label, {TextColor3 = Library.Theme.Dim}, 0.12) end
     end)
     connect(row.MouseButton1Click, function() apply(not value) end)
     function control:Set(newValue, silent) apply(newValue, silent == true) end
@@ -607,7 +611,7 @@ function SectionMethods:Toggle(data)
     local control = self:Checkbox(data.Name or flag, data.Default == true, function(value)
         Library.Flags[flag] = value
         Library:SafeCall(data.Callback, value)
-    end)
+    end, {Risky = data.Risky == true or data.Unstable == true or data.Risk == true, Color = data.RiskyColor})
     Library.Flags[flag] = data.Default == true
     Library.SetFlags[flag] = function(value) control:Set(value) end
     local sectionWindow = self.Window
@@ -832,7 +836,7 @@ function Library:CreateKeybind(data)
     for _, mode in ipairs({"Hold", "Toggle", "Always"}) do
         local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9102}, popupContent)
         new("UIPadding", {PaddingLeft = UDim.new(0, 10)}, option)
-        local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
+        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
         round(line, 2)
         modeButtons[mode] = option
         modeLines[mode] = line
