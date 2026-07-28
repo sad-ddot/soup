@@ -145,7 +145,8 @@ function Library:Window(data)
     local parent = getParent()
     local gui = new("ScreenGui", {Name = title .. "_" .. tostring(math.random(10000, 99999)), IgnoreGuiInset = true, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parent)
     local popupLayer = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 9000}, gui)
-    local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, -350, 0.5, -225), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 0}, gui)
+    local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, -350, 0.5, -225), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1}, gui)
+    local mainScale = new("UIScale", {Scale = 0.985}, main)
     round(main, 4)
     local mainStroke = stroke(main, Color3.fromRGB(100, 104, 118), 0, 3)
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Library.Theme.Bg, BackgroundTransparency = 0, BorderSizePixel = 0}, main)
@@ -166,8 +167,10 @@ function Library:Window(data)
     local pageRoot = new("Frame", {Size = UDim2.new(1, -20, 1, -52), Position = UDim2.fromOffset(10, 44), BackgroundTransparency = 1, ClipsDescendants = true}, main)
     local notifyHolder = new("Frame", {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -14, 1, -14), Size = UDim2.fromOffset(260, 360), BackgroundTransparency = 1, ZIndex = 9500}, gui)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Bottom}, notifyHolder)
-    local window = setmetatable({Library = self, Gui = gui, Main = main, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true}, WindowMethods)
+    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true}, WindowMethods)
     self.Windows[#self.Windows + 1] = window
+    tween(main, {GroupTransparency = 0}, 0.22)
+    tween(mainScale, {Scale = 1}, 0.22, Enum.EasingStyle.Back)
     local drag, dragStart, startPos
     connect(header.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -206,8 +209,11 @@ function WindowMethods:SetOpen(value)
     if self.Open then
         self.Main.Visible = true
         self.Main.GroupTransparency = 1
+        if self.MainScale then self.MainScale.Scale = 0.985 end
         tween(self.Main, {GroupTransparency = 0}, 0.18)
+        if self.MainScale then tween(self.MainScale, {Scale = 1}, 0.18, Enum.EasingStyle.Back) end
     else
+        if self.MainScale then tween(self.MainScale, {Scale = 0.985}, 0.16) end
         tween(self.Main, {GroupTransparency = 1}, 0.16).Completed:Connect(function()
             if not self.Open then self.Main.Visible = false end
         end)
@@ -236,7 +242,8 @@ end
 function WindowMethods:Page(data)
     data = data or {}
     local name = data.Name or data.name or "Page"
-    local tab = new("TextButton", {Size = UDim2.fromOffset(math.max(66, #name * 9), 30), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, AutoButtonColor = false, BorderSizePixel = 0}, self.TabBar)
+    local tab = new("TextButton", {Size = UDim2.fromOffset(math.max(66, #name * 9), 30), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, AutoButtonColor = false, BorderSizePixel = 0}, self.TabBar)
+    round(tab, 3)
     local page = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false}, self.PageRoot)
     local left = new("ScrollingFrame", {Size = UDim2.new(0.5, -5, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0)}, page)
     local right = new("ScrollingFrame", {Size = UDim2.new(0.5, -5, 1, 0), Position = UDim2.new(0.5, 5, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0)}, page)
@@ -262,7 +269,7 @@ function WindowMethods:SelectPage(name)
         page.Page.Visible = pageName == name
     end
     for tabName, tab in pairs(self.Tabs) do
-        tween(tab, {TextColor3 = tabName == name and Library.Theme.Text or Library.Theme.Dim}, 0.14)
+        tween(tab, {TextColor3 = tabName == name and Library.Theme.Text or Library.Theme.Dim, BackgroundTransparency = tabName == name and 0.92 or 1}, 0.14)
     end
 end
 
@@ -380,13 +387,15 @@ function SectionMethods:Toggle(data)
     end)
     Library.Flags[flag] = data.Default == true
     Library.SetFlags[flag] = function(value) control:Set(value) Library:SafeCall(data.Callback, value == true) end
+    local sectionWindow = self.Window
+    local sectionObject = self
     function control:Colorpicker(colorData)
         colorData = colorData or {}
-        return Library:CreateColorpicker({Window = self.Window, Section = self.Section, Parent = self.Instance, Name = colorData.Name, Flag = colorData.Flag or colorData.Name or flag .. "Color", Default = colorData.Default or Color3.new(1, 1, 1), Alpha = colorData.Alpha or colorData.Transparency or 0, Callback = colorData.Callback})
+        return Library:CreateColorpicker({Window = sectionWindow, Section = sectionObject, Parent = control.Instance, Name = colorData.Name, Flag = colorData.Flag or colorData.Name or flag .. "Color", Default = colorData.Default or Color3.new(1, 1, 1), Alpha = colorData.Alpha or colorData.Transparency or 0, Callback = colorData.Callback})
     end
     function control:Keybind(bindData)
         bindData = bindData or {}
-        return Library:CreateKeybind({Window = self.Window, Section = self.Section, Parent = self.Instance, Name = bindData.Name or data.Name or flag, Flag = bindData.Flag or bindData.Name or flag .. "Key", Default = bindData.Default or Enum.KeyCode.None, Mode = bindData.Mode or "Toggle", Callback = bindData.Callback})
+        return Library:CreateKeybind({Window = sectionWindow, Section = sectionObject, Parent = control.Instance, Name = bindData.Name or data.Name or flag, Flag = bindData.Flag or bindData.Name or flag .. "Key", Default = bindData.Default or Enum.KeyCode.None, Mode = bindData.Mode or "Toggle", Callback = bindData.Callback})
     end
     return control
 end
@@ -691,10 +700,23 @@ function SectionMethods:Button(label, callback)
 end
 
 function WindowMethods:Watermark(defaultText)
-    local wm = new("CanvasGroup", {Size = UDim2.fromOffset(240, 42), Position = UDim2.fromOffset(14, 10), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 0, Visible = true}, self.Gui)
+    local wm = new("CanvasGroup", {Size = UDim2.fromOffset(270, 42), Position = UDim2.new(0.5, -135, 0, 10), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 0, Visible = true}, self.Gui)
     round(wm, 4)
     stroke(wm, Library.Theme.Accent, 0.15)
     local label = new("TextLabel", {Size = UDim2.new(1, -14, 1, 0), Position = UDim2.fromOffset(7, 0), BackgroundTransparency = 1, Text = defaultText or "CatHack", TextColor3 = Library.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left}, wm)
+    local drag, dragStart, startPos
+    connect(wm.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = true dragStart = input.Position startPos = wm.Position end
+    end)
+    connect(wm.InputEnded, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
+    end)
+    connect(UIS.InputChanged, function(input)
+        if drag and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            wm.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
     local object = {}
     function object:Set(textValue) label.Text = textValue end
     function object:SetVisibility(value) wm.Visible = value == true end
@@ -703,13 +725,26 @@ function WindowMethods:Watermark(defaultText)
 end
 
 function WindowMethods:KeybindList()
-    local frame = new("CanvasGroup", {Size = UDim2.fromOffset(180, 32), Position = UDim2.new(1, -198, 0, 80), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, Visible = true, GroupTransparency = 0}, self.Gui)
+    local frame = new("CanvasGroup", {Size = UDim2.fromOffset(190, 48), Position = UDim2.new(0.5, -95, 0, 58), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, Visible = true, GroupTransparency = 0}, self.Gui)
     round(frame, 5)
     stroke(frame, Library.Theme.Stroke, 0.1)
     local title = new("TextLabel", {Size = UDim2.new(1, -12, 0, 24), Position = UDim2.fromOffset(6, 0), BackgroundTransparency = 1, Text = "Keybinds", TextColor3 = Library.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left}, frame)
     local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, 25), BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.Y}, frame)
     local layout = new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2)}, holder)
-    local object = {}
+    local object = {Visible = true}
+    local drag, dragStart, startPos
+    connect(frame.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = true dragStart = input.Position startPos = frame.Position end
+    end)
+    connect(frame.InputEnded, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
+    end)
+    connect(UIS.InputChanged, function(input)
+        if drag and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
     local function refresh()
         for _, child in ipairs(holder:GetChildren()) do if child:IsA("TextLabel") then child:Destroy() end end
         local count = 0
@@ -719,8 +754,11 @@ function WindowMethods:KeybindList()
                 new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Text = entry.Name .. "  [" .. keyName(entry.State.Key) .. "]", TextColor3 = Library.Theme.Dim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left}, holder)
             end
         end
-        frame.Size = UDim2.fromOffset(180, math.max(32, 30 + count * 18))
-        frame.Visible = object.Visible ~= false and count > 0
+        if count == 0 then
+            new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Text = "No active binds", TextColor3 = Library.Theme.Dim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left}, holder)
+        end
+        frame.Size = UDim2.fromOffset(190, math.max(48, 30 + math.max(count, 1) * 18))
+        frame.Visible = object.Visible ~= false
     end
     function object:SetVisibility(value) object.Visible = value == true; refresh() end
     function object:Add() refresh() end
