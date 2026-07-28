@@ -626,7 +626,12 @@ function Library:CreateColorpicker(data)
     local flag = data.Flag
     local hue, sat, val = state.Color:ToHSV()
     self.Flags[flag] = state
-    local swatch = new("TextButton", {Size = UDim2.fromOffset(30, 14), Position = UDim2.new(1, -34, 0.5, -7), BackgroundColor3 = state.Color, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
+    local swatchCount = 0
+    for _, child in ipairs(data.Parent:GetChildren()) do
+        if child.Name == "__swatch" then swatchCount += 1 end
+    end
+    swatchCount = math.clamp(swatchCount, 0, 2)
+    local swatch = new("TextButton", {Size = UDim2.fromOffset(30, 14), Position = UDim2.new(1, -34 - swatchCount * 34, 0.5, -7), BackgroundColor3 = state.Color, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
     round(swatch, 4)
     stroke(swatch, Library.Theme.Stroke, 0.05)
     local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
@@ -659,7 +664,7 @@ function Library:CreateColorpicker(data)
     stroke(alphaKnob, Color3.new(0, 0, 0), 0.4)
     local hexLabel = new("TextLabel", {Parent = popup, Size = UDim2.fromOffset(170, 14), Position = UDim2.fromOffset(8, 139), BackgroundTransparency = 1, TextColor3 = Library.Theme.Dim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9201})
     local open = false
-    local function apply()
+    local function apply(silent)
         state.Color = Color3.fromHSV(hue, sat, val)
         swatch.BackgroundColor3 = state.Color
         palette.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
@@ -669,7 +674,7 @@ function Library:CreateColorpicker(data)
         hueKnob.Position = UDim2.new(0.5, 0, hue, 0)
         alphaKnob.Position = UDim2.new(1 - state.Transparency, 0, 0.5, 0)
         Library.Flags[flag] = state
-        Library:SafeCall(data.Callback, state.Color, state.Transparency)
+        if not silent then Library:SafeCall(data.Callback, state.Color, state.Transparency) end
     end
     local function place()
         popup.Position = UDim2.fromOffset(swatch.AbsolutePosition.X - data.Window.PopupLayer.AbsolutePosition.X, swatch.AbsolutePosition.Y - data.Window.PopupLayer.AbsolutePosition.Y + swatch.AbsoluteSize.Y + 4)
@@ -684,7 +689,7 @@ function Library:CreateColorpicker(data)
         Library.OpenFrames = {}
         open = true
         place()
-        apply()
+        apply(true)
         popup.Visible = true
         popup.GroupTransparency = 1
         tween(popup, {GroupTransparency = 0}, 0.14)
@@ -734,9 +739,9 @@ function Library:CreateColorpicker(data)
             if value.r then state.Color = Color3.new(value.r, value.g, value.b) state.Transparency = value.tr or 0 end
         elseif typeof(value) == "Color3" then state.Color = value end
         hue, sat, val = state.Color:ToHSV()
-        apply()
+        apply(true)
     end
-    apply()
+    apply(true)
     return {Set = self.SetFlags[flag], Get = function() return state end, Instance = swatch}
 end
 
@@ -745,8 +750,12 @@ function Library:CreateKeybind(data)
     local defaultKey = keyFromString(data.Default) or nil
     local bind = {Mode = data.Mode or "Toggle", Key = defaultKey, Toggled = false, active = false, Value = defaultKey and keyName(defaultKey) or "None"}
     self.Flags[flag] = bind
-    local hasSwatch = data.Parent:FindFirstChild("__swatch") ~= nil
-    local shell = new("Frame", {Size = UDim2.fromOffset(44, 14), Position = UDim2.new(1, hasSwatch and -84 or -50, 0.5, -7), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5}, data.Parent)
+    local swatchCount = 0
+    for _, child in ipairs(data.Parent:GetChildren()) do
+        if child.Name == "__swatch" then swatchCount += 1 end
+    end
+    swatchCount = math.clamp(swatchCount, 0, 3)
+    local shell = new("Frame", {Size = UDim2.fromOffset(44, 14), Position = UDim2.new(1, -50 - swatchCount * 34, 0.5, -7), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5}, data.Parent)
     local shellBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 5}, shell)
     round(shellBg, 2)
     stroke(shellBg, Library.Theme.Stroke, 0.1)
@@ -1408,17 +1417,18 @@ function Library:ESPPreview(params)
     camera.Parent = viewport
     viewport.CurrentCamera = camera
     local overlay = new("Frame", {Parent = viewport, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ZIndex = 20})
-    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(145, 230), Position = UDim2.new(0.5, -72, 0.5, -112), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
+    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(125, 205), Position = UDim2.new(0.5, -62, 0.5, -93), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
     stroke(box, Library.Theme.Accent, 0, 1)
     local fill = new("Frame", {Parent = box, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Visible = false, ZIndex = 23})
-    local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, -128), BackgroundTransparency = 1, Text = "@EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, -113), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 11, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, 116), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, 133), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 230), Position = UDim2.new(0.5, -84, 0.5, -112), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
+    local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 14), Position = UDim2.new(0.5, -95, 0.5, -124), BackgroundTransparency = 1, Text = "@EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 14), Position = UDim2.new(0.5, -95, 0.5, -111), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 9, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 116), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 130), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(3, 205), Position = UDim2.new(0.5, -72, 0.5, -93), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
     local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
-    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(40, 14), Position = UDim2.new(0.5, -128, 0.5, -119), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
-    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(145, 230), Position = UDim2.new(0.5, -72, 0.5, -112), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
+    local healthGradient = new("UIGradient", {Parent = healthFill, Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(80, 255, 120), Color3.fromRGB(255, 80, 80))})
+    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(36, 12), Position = UDim2.new(0.5, -112, 0.5, -99), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 9, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
+    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(125, 205), Position = UDim2.new(0.5, -62, 0.5, -93), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
     local skeletonLines = {}
     local function skeletonLine(size, position)
         local line = new("Frame", {Parent = skeleton, Size = size, Position = position, AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, ZIndex = 27})
@@ -1439,12 +1449,26 @@ function Library:ESPPreview(params)
     local healthBottom = Color3.fromRGB(255, 80, 80)
     local healthAuto = true
     local healthTweenId = 0
+    local function updateHealthCounter()
+        local ratio = math.clamp(healthFill.Size.Y.Scale, 0, 1)
+        healthCurrent = ratio
+        local tipColor = healthBottom:Lerp(healthTop, ratio)
+        healthText.Text = tostring(math.floor(ratio * 100 + 0.5))
+        healthText.TextColor3 = tipColor
+        healthText.Position = UDim2.new(0.5, -112, 0.5, -99 + (1 - ratio) * 205)
+    end
     local function setHealthRatio(ratio, duration)
         healthCurrent = math.clamp(ratio, 0, 1)
-        healthFill.BackgroundColor3 = healthTop
-        healthText.Text = tostring(math.floor(healthCurrent * 100 + 0.5))
+        healthGradient.Color = ColorSequence.new(healthTop, healthBottom)
         tween(healthFill, {Size = UDim2.new(1, 0, healthCurrent, 0)}, duration or 0.14)
+        updateHealthCounter()
     end
+    task.spawn(function()
+        while frame.Parent do
+            if frame.Visible and healthBg.Visible then updateHealthCounter() end
+            task.wait(0.05)
+        end
+    end)
     task.spawn(function()
         while frame.Parent do
             if healthAuto and frame.Visible and healthBg.Visible then
@@ -1499,7 +1523,7 @@ function Library:ESPPreview(params)
             end
         end
         local base = CFrame.new(0, 1.75, 0) * CFrame.Angles(0, math.rad(180), 0)
-        local scale = 0.92
+        local scale = 0.86
         local function cleanPart(part)
             for _, child in ipairs(part:GetDescendants()) do
                 if child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("Weld") or child:IsA("WeldConstraint") or child:IsA("Motor6D") or child:IsA("Attachment") or child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") or child:IsA("Smoke") or child:IsA("Fire") or child:IsA("Sparkles") or child:IsA("Sound") or child:IsA("BillboardGui") or child:IsA("SurfaceGui") or child:IsA("ProximityPrompt") or child:IsA("Highlight") or child:IsA("ForceField") then
@@ -1554,7 +1578,7 @@ function Library:ESPPreview(params)
         if count == 0 then viewmodel:Destroy() return end
         viewmodel.Parent = viewport
         preview.Player = viewmodel
-        camera.CFrame = CFrame.new(Vector3.new(0, 2.1, 6.35), Vector3.new(0, 2, 0))
+        camera.CFrame = CFrame.new(Vector3.new(0, 2.1, 6.9), Vector3.new(0, 2, 0))
     end
     function preview:SetBox(visible, color, fillVisible, fillColor)
         box.Visible = visible == true
