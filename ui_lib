@@ -32,6 +32,7 @@ local Library = {
         Text = Color3.fromRGB(211, 211, 211),
         Dim = Color3.fromRGB(139, 139, 139),
         Bad = Color3.fromRGB(220, 80, 85),
+        Risky = Color3.fromRGB(220, 80, 85),
     },
 }
 
@@ -294,13 +295,14 @@ function WindowMethods:SetOpen(value)
     if self.Open then
         self.Main.Visible = true
         self.Main.GroupTransparency = 1
-        if self.MainScale then self.MainScale.Scale = 0.985 end
+        local targetScale = Library.UIScale or 1
+        if self.MainScale then self.MainScale.Scale = targetScale * 0.985 end
         tween(self.Main, {GroupTransparency = 0}, 0.18)
-        if self.MainScale then tween(self.MainScale, {Scale = 1}, 0.18, Enum.EasingStyle.Back) end
+        if self.MainScale then tween(self.MainScale, {Scale = targetScale}, 0.18, Enum.EasingStyle.Back) end
     else
         for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
         Library.OpenFrames = {}
-        if self.MainScale then tween(self.MainScale, {Scale = 0.985}, 0.16) end
+        if self.MainScale then tween(self.MainScale, {Scale = (Library.UIScale or 1) * 0.985}, 0.16) end
         tween(self.Main, {GroupTransparency = 1}, 0.16).Completed:Connect(function()
             if not self.Open then self.Main.Visible = false end
         end)
@@ -403,7 +405,7 @@ function PageMethods:Section(data)
         body.Size = UDim2.new(1, -20, 0, layout.AbsoluteContentSize.Y)
         section.Size = UDim2.new(1, 0, 0, layout.AbsoluteContentSize.Y + 40)
     end)
-    local sectionObject = setmetatable({Window = self.Window, Page = self, Name = title, Section = section, Body = body, Scale = scale}, SectionMethods)
+    local sectionObject = setmetatable({Window = self.Window, Page = self, Name = title, Side = side, Section = section, Body = body, Scale = scale}, SectionMethods)
     self.Sections[#self.Sections + 1] = sectionObject
     self.Window.Sections[#self.Window.Sections + 1] = sectionObject
     return sectionObject
@@ -454,6 +456,73 @@ function PageMethods:SubTabs(items, resolve)
         connect(button.MouseButton1Click, function() select(label) end)
     end
     select(items[1])
+end
+
+function PageMethods:SubPage(data)
+    data = data or {}
+    local name = data.Name or data.name or "SubPage"
+    if not self.SubPageRoot then
+        self.SubPages = {}
+        self.SubPageButtons = {}
+        self.SubPageRoot = new("Frame", {Size = UDim2.new(0, 88, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, self.Page)
+        self.SubPageHidden = new("Frame", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false}, self.Page)
+        new("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, self.SubPageRoot)
+        new("UIPadding", {PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, self.SubPageRoot)
+        self.Left.Position = UDim2.new(0, 98, 0, 0)
+        self.Left.Size = UDim2.new(0.5, -55, 1, 0)
+        self.Right.Position = UDim2.new(0.5, 55, 0, 0)
+        self.Right.Size = UDim2.new(0.5, -55, 1, 0)
+        function self:SelectSubPage(label)
+            for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
+            Library.OpenFrames = {}
+            self.CurrentSubPage = label
+            for buttonName, buttonData in pairs(self.SubPageButtons) do
+                local on = buttonName == label
+                tween(buttonData.Button, {TextColor3 = on and Library.Theme.Accent or Library.Theme.Dim, BackgroundTransparency = on and 0.88 or 1}, 0.16)
+                buttonData.Accent.Visible = on
+            end
+            for _, section in ipairs(self.Sections) do
+                local visible = section.SubPage == label or section.SubPage == nil
+                if visible then
+                    section.Section.Parent = section.Side == 2 and self.Right or self.Left
+                    section.Section.Visible = true
+                    section.Section.GroupTransparency = 1
+                    if section.Scale then section.Scale.Scale = 0.98 end
+                    tween(section.Section, {GroupTransparency = 0}, 0.16)
+                    if section.Scale then tween(section.Scale, {Scale = 1}, 0.16) end
+                else
+                    section.Section.Visible = false
+                    if self.SubPageHidden then section.Section.Parent = self.SubPageHidden end
+                end
+            end
+        end
+    end
+    local button = new("TextButton", {Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Text = name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, LayoutOrder = #self.SubPages + 1}, self.SubPageRoot)
+    round(button, 3)
+    new("UIPadding", {PaddingLeft = UDim.new(0, 8)}, button)
+    local accent = new("Frame", {Size = UDim2.new(0, 3, 1, 0), Position = UDim2.new(0, -7, 0, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false}, button)
+    round(accent, 2)
+    self.SubPageButtons[name] = {Button = button, Accent = accent}
+    self.SubPages[#self.SubPages + 1] = name
+    connect(button.MouseButton1Click, function() self:SelectSubPage(name) end)
+    connect(button.MouseEnter, function() if self.CurrentSubPage ~= name then tween(button, {TextColor3 = Library.Theme.Text}, 0.12) end end)
+    connect(button.MouseLeave, function() if self.CurrentSubPage ~= name then tween(button, {TextColor3 = Library.Theme.Dim}, 0.12) end end)
+    local object = {Page = self, Name = name}
+    function object:Section(sectionData)
+        sectionData = sectionData or {}
+        local section = self.Page:Section(sectionData)
+        section.SubPage = name
+        if self.Page.CurrentSubPage == name then
+            section.Section.Parent = section.Side == 2 and self.Page.Right or self.Page.Left
+            section.Section.Visible = true
+        else
+            section.Section.Visible = false
+            if self.Page.SubPageHidden then section.Section.Parent = self.Page.SubPageHidden end
+        end
+        return section
+    end
+    if not self.CurrentSubPage then self:SelectSubPage(name) end
+    return object
 end
 
 function SectionMethods:Checkbox(name, default, callback)
@@ -980,20 +1049,52 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     end
     rebuild()
     updateValue(true)
-    return {Set = Library.SetFlags[flag], Get = function() return Library.Flags[flag] end, Refresh = function(_, newOptions) options = newOptions or options rebuild() updateValue(true) end, Instance = holder}
+    local object = {Instance = holder}
+    function object:Set(value) Library.SetFlags[flag](value) end
+    function object:SetValue(value) Library.SetFlags[flag](value) end
+    function object:Get() return Library.Flags[flag] end
+    function object:Refresh(newOptions) options = newOptions or options rebuild() updateValue(true) end
+    function object:SetItems(newOptions) options = newOptions or options rebuild() updateValue(true) end
+    return object
 end
 
 function SectionMethods:Label(labelText)
+    local data = type(labelText) == "table" and labelText or {Name = labelText}
+    local name = data.Name or data.Text or data.Label or "Label"
     local row = new("Frame", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1}, self.Body)
-    new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), BackgroundTransparency = 1, Text = labelText, TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, row)
+    local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), BackgroundTransparency = 1, Text = tostring(name), TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, row)
     local sectionWindow = self.Window
     local sectionObject = self
-    local object = {Instance = row, Window = sectionWindow, Section = sectionObject}
-    function object:Colorpicker(data)
-        data = data or {}
-        return Library:CreateColorpicker({Window = sectionWindow, Section = sectionObject, Parent = row, Name = data.Name or labelText, Flag = data.Flag or data.Name or labelText, Default = data.Default or Color3.new(1, 1, 1), Alpha = data.Alpha or data.Transparency or 0, Callback = data.Callback})
+    local object = {Instance = row, Window = sectionWindow, Section = sectionObject, Label = label}
+    function object:Set(value) label.Text = tostring(value or "") end
+    function object:Colorpicker(colorData)
+        colorData = colorData or {}
+        return Library:CreateColorpicker({Window = sectionWindow, Section = sectionObject, Parent = row, Name = colorData.Name or name, Flag = colorData.Flag or colorData.Name or name, Default = colorData.Default or Color3.new(1, 1, 1), Alpha = colorData.Alpha or colorData.Transparency or 0, Callback = colorData.Callback})
     end
     return object
+end
+
+function SectionMethods:Textbox(data)
+    data = data or {}
+    local flag = data.Flag or data.Name or "Textbox"
+    local holder = new("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1}, self.Body)
+    new("TextLabel", {Size = UDim2.new(1, 0, 0, 12), BackgroundTransparency = 1, Text = tostring(data.Name or flag), TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, holder)
+    local box = new("TextBox", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 15), BackgroundTransparency = 1, BorderSizePixel = 0, Text = tostring(data.Default or ""), PlaceholderText = tostring(data.Placeholder or ""), PlaceholderColor3 = Library.Theme.Dim, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false}, holder)
+    local bg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = box.ZIndex - 1}, box)
+    round(bg, 4)
+    stroke(bg, Library.Theme.Stroke, 0.1)
+    new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, bg)
+    new("UIPadding", {PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)}, box)
+    Library.Flags[flag] = box.Text
+    connect(box.FocusLost, function()
+        Library.Flags[flag] = box.Text
+        Library:SafeCall(data.Callback, box.Text)
+    end)
+    Library.SetFlags[flag] = function(value)
+        box.Text = tostring(value or "")
+        Library.Flags[flag] = box.Text
+    end
+    return {Set = Library.SetFlags[flag], Get = function() return box.Text end, Instance = holder}
 end
 
 function SectionMethods:Button(label, callback)
@@ -1011,6 +1112,7 @@ function SectionMethods:Button(label, callback)
 end
 
 function WindowMethods:Watermark(defaultText)
+    if type(defaultText) == "table" then defaultText = defaultText.Name or defaultText.Text or defaultText.Title end
     local wm = new("CanvasGroup", {Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(0, 30), AnchorPoint = Vector2.new(0.5, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, BorderSizePixel = 0, GroupTransparency = 0, Visible = true, ZIndex = 9700}, self.Gui)
     new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, wm)
     local function mkWin(defText, order, isTitle, iconAsset)
@@ -1337,7 +1439,7 @@ function Library:TargetIndicator()
     round(hpFill, 2)
     local hpText = new("TextLabel", {Parent = hpBg, Size = UDim2.new(1, -6, 1, 0), Position = UDim2.fromOffset(3, 0), BackgroundTransparency = 1, Text = "100/100", TextColor3 = Library.Theme.Text, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Right})
     local status = new("TextLabel", {Parent = frame, Size = UDim2.fromOffset(132, 16), Position = UDim2.fromOffset(78, 82), BackgroundTransparency = 1, Text = "", TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Library.Font, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, TextStrokeTransparency = 1, Visible = false})
-    local aliases = {Invisible = "Unvisible", NotVisible = "Unvisible", HitScan = "Hitscanned", Hitscan = "Hitscanned", Resolver = "Resolved", Resolved = "Resolved"}
+    local aliases = {Invisible = "Unvisible", NotVisible = "Unvisible", HitScan = "Hitscanned", Hitscan = "Hitscanned", Mogging = "Hitscanned", Resolver = "Resolved", Resolved = "Resolved"}
     local allowed = {Visible = true, Unvisible = true, Manipulating = true, Manipulated = true, Hitscanned = true, Resolved = true}
     local function normalizeStatus(name)
         local key = aliases[tostring(name)] or tostring(name or "")
@@ -1484,7 +1586,19 @@ function Library:InventoryViewer(params)
         viewer:SetSummary("0 items")
     end
     function viewer:SetSections(list)
-        if type(list) == "table" then viewer.SectionOrder = list end
+        if type(list) ~= "table" then return end
+        if type(list[1]) == "table" and (list[1].Entries or list[1].Items or list[1].items) then
+            clearBody()
+            viewer.Entries = {}
+            for order, section in ipairs(list) do
+                local entries = section.Entries or section.Items or section.items or {}
+                local normalized = {}
+                for _, raw in ipairs(entries) do normalized[#normalized + 1] = normalizeItem(raw) end
+                addSection(section.Name or section.name or section.Section or "Items", normalized, order)
+            end
+        else
+            viewer.SectionOrder = list
+        end
     end
     function viewer:SetItems(list)
         viewer:Clear()
@@ -1510,6 +1624,122 @@ function Library:InventoryViewer(params)
     return viewer
 end
 
+function Library:Notification(message, duration, color)
+    return self:Notify(message, duration, color)
+end
+
+function Library:KeybindList(data)
+    local window = self.Windows[#self.Windows]
+    if not window then return nil end
+    local object = window:KeybindList(data)
+    self.KeyList = object
+    return object
+end
+
+function Library:Watermark(data)
+    local window = self.Windows[#self.Windows]
+    if not window then return nil end
+    local object = window:Watermark(type(data) == "table" and (data.Name or data.Text or data.Title) or data)
+    self.WatermarkObject = object
+    return object
+end
+
+function Library:SetScale(value)
+    value = math.clamp(tonumber(value) or 1, 0.5, 1.5)
+    self.UIScale = value
+    for _, window in ipairs(self.Windows) do
+        if window.MainScale then window.MainScale.Scale = value end
+    end
+end
+
+function Library:ChangeTheme(key, value)
+    if typeof(value) ~= "Color3" then return end
+    local map = {Background = "Bg", Section = "Panel", Element = "Input", Outline = "Stroke", Risky = "Bad"}
+    local target = map[key] or key
+    self.Theme[target] = value
+    if target == "Bad" then self.Theme.Risky = value end
+    if target == "Accent" then self.Theme.Accent2 = value end
+end
+
+local function configPath(name)
+    name = tostring(name or "default"):gsub("%.json$", "")
+    name = name:gsub("[^%w%._%- ]", "_")
+    if name == "" then name = "default" end
+    return Library.Folders.Configs .. "/" .. name .. ".json", name
+end
+
+local function serializeValue(value)
+    if typeof(value) == "Color3" then
+        return {__type = "Color3", r = value.R, g = value.G, b = value.B}
+    end
+    if typeof(value) == "EnumItem" then
+        return {__type = "EnumItem", value = tostring(value)}
+    end
+    if type(value) == "table" then
+        local out = {}
+        for k, v in pairs(value) do out[k] = serializeValue(v) end
+        return out
+    end
+    return value
+end
+
+local function deserializeValue(value)
+    if type(value) ~= "table" then return value end
+    if value.__type == "Color3" then return Color3.new(tonumber(value.r) or 1, tonumber(value.g) or 1, tonumber(value.b) or 1) end
+    if value.__type == "EnumItem" then return keyFromString(value.value) end
+    local out = {}
+    for k, v in pairs(value) do out[k] = deserializeValue(v) end
+    return out
+end
+
+function Library:SaveConfig(name)
+    local pathName = configPath(name)
+    local data = {}
+    for key, value in pairs(self.Flags) do data[key] = serializeValue(value) end
+    local encoded = HttpService:JSONEncode(data)
+    pcall(function()
+        if not isfolder(self.Folders.Directory) then makefolder(self.Folders.Directory) end
+        if not isfolder(self.Folders.Configs) then makefolder(self.Folders.Configs) end
+    end)
+    if not writefile then return false end
+    writefile(pathName, encoded)
+    return true
+end
+
+function Library:LoadConfigFromFile(name)
+    local pathName = configPath(name)
+    if not readfile or not isfile or not isfile(pathName) then return false end
+    local decoded = HttpService:JSONDecode(readfile(pathName))
+    for key, value in pairs(decoded or {}) do
+        local restored = deserializeValue(value)
+        if self.SetFlags[key] then
+            pcall(function() self.SetFlags[key](restored) end)
+        else
+            self.Flags[key] = restored
+        end
+    end
+    return true
+end
+
+function Library:GetConfigs()
+    local configs = {}
+    if not listfiles then return configs end
+    local ok, files = pcall(function() return listfiles(self.Folders.Configs) end)
+    if not ok or type(files) ~= "table" then return configs end
+    for _, file in ipairs(files) do
+        local name = tostring(file):match("([^/\\]+)%.json$")
+        if name then configs[#configs + 1] = name end
+    end
+    table.sort(configs)
+    return configs
+end
+
+function Library:DeleteConfig(name)
+    local pathName = configPath(name)
+    if delfile and isfile and isfile(pathName) then delfile(pathName) return true end
+    return false
+end
+
 function Library:CreateSettingsPage(window, keybindList, watermark)
     local page = window:Page({Name = "Settings"})
     local ui = page:Section({Name = "Interface", Side = 1})
@@ -1519,6 +1749,10 @@ function Library:CreateSettingsPage(window, keybindList, watermark)
     cfg:Button("Save", function() Library:Notify("Config save is not bound", 2) end)
     cfg:Button("Load", function() Library:Notify("Config load is not bound", 2) end)
     return page
+end
+
+function WindowMethods:CreateSettingsPage()
+    return Library:CreateSettingsPage(self, Library.KeyList, Library.WatermarkObject or self.WatermarkObject)
 end
 
 function Library:Exit()
