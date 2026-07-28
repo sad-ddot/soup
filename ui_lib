@@ -322,7 +322,7 @@ function WindowMethods:SetOpen(value)
     self.Open = value == true
     if self.Open then
         self.Main.Visible = true
-        if self.ESPPreviewObject and self.ESPPreviewObject.Visible then self.ESPPreviewObject.Frame.Visible = true end
+        if self.ESPPreviewObject and self.ESPPreviewObject.Visible then if self.ESPPreviewObject.DockLeft then self.ESPPreviewObject:DockLeft() end self.ESPPreviewObject.Frame.Visible = true end
         self.Main.GroupTransparency = 1
         local targetScale = Library.UIScale or 1
         if self.MainScale then self.MainScale.Scale = targetScale * 0.985 end
@@ -1408,17 +1408,17 @@ function Library:ESPPreview(params)
     camera.Parent = viewport
     viewport.CurrentCamera = camera
     local overlay = new("Frame", {Parent = viewport, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ZIndex = 20})
-    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(118, 210), Position = UDim2.new(0.5, -59, 0.5, -102), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
+    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(145, 230), Position = UDim2.new(0.5, -72, 0.5, -112), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
     stroke(box, Library.Theme.Accent, 0, 1)
     local fill = new("Frame", {Parent = box, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Visible = false, ZIndex = 23})
     local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, -128), BackgroundTransparency = 1, Text = "@EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
     local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, -113), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 11, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
     local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, 116), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
     local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, 133), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 210), Position = UDim2.new(0.5, -70, 0.5, -102), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
+    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 230), Position = UDim2.new(0.5, -84, 0.5, -112), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
     local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
-    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(40, 14), Position = UDim2.new(0.5, -113, 0.5, -109), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
-    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(118, 210), Position = UDim2.new(0.5, -59, 0.5, -102), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
+    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(40, 14), Position = UDim2.new(0.5, -128, 0.5, -119), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
+    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(145, 230), Position = UDim2.new(0.5, -72, 0.5, -112), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
     local skeletonLines = {}
     local function skeletonLine(size, position)
         local line = new("Frame", {Parent = skeleton, Size = size, Position = position, AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, ZIndex = 27})
@@ -1438,28 +1438,34 @@ function Library:ESPPreview(params)
     local healthTop = Color3.fromRGB(80, 255, 120)
     local healthBottom = Color3.fromRGB(255, 80, 80)
     local healthAuto = true
-    connect(RunService.RenderStepped, function(dt)
-        dockLeft()
-        if healthAuto then
-            local phase = (os.clock() * 0.42) % 2
-            if phase <= 1 then
-                healthCurrent = 1 - phase
-            else
-                healthCurrent = phase - 1
-            end
-        else
-            local alpha = math.clamp(dt * 12, 0, 1)
-            healthCurrent += (healthTarget - healthCurrent) * alpha
-            if math.abs(healthCurrent - healthTarget) < 0.001 then healthCurrent = healthTarget end
-        end
-        healthFill.Size = UDim2.new(1, 0, healthCurrent, 0)
+    local healthTweenId = 0
+    local function setHealthRatio(ratio, duration)
+        healthCurrent = math.clamp(ratio, 0, 1)
         healthFill.BackgroundColor3 = healthTop
         healthText.Text = tostring(math.floor(healthCurrent * 100 + 0.5))
+        tween(healthFill, {Size = UDim2.new(1, 0, healthCurrent, 0)}, duration or 0.14)
+    end
+    task.spawn(function()
+        while frame.Parent do
+            if healthAuto and frame.Visible and healthBg.Visible then
+                healthTweenId += 1
+                setHealthRatio(0, 1.35)
+                task.wait(1.4)
+                if not healthAuto then continue end
+                setHealthRatio(1, 1.35)
+                task.wait(1.4)
+            else
+                task.wait(0.25)
+            end
+        end
     end)
     local highlight
     function preview:SetVisibility(value)
         preview.Visible = value == true
         frame.Visible = preview.Visible and (not window or window.Main.Visible)
+    end
+    function preview:DockLeft()
+        dockLeft()
     end
     function preview:SetAutoDock(value)
         preview.AutoDock = value ~= false
@@ -1493,7 +1499,7 @@ function Library:ESPPreview(params)
             end
         end
         local base = CFrame.new(0, 1.75, 0) * CFrame.Angles(0, math.rad(180), 0)
-        local scale = 1.03
+        local scale = 0.92
         local function cleanPart(part)
             for _, child in ipairs(part:GetDescendants()) do
                 if child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("Weld") or child:IsA("WeldConstraint") or child:IsA("Motor6D") or child:IsA("Attachment") or child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") or child:IsA("Smoke") or child:IsA("Fire") or child:IsA("Sparkles") or child:IsA("Sound") or child:IsA("BillboardGui") or child:IsA("SurfaceGui") or child:IsA("ProximityPrompt") or child:IsA("Highlight") or child:IsA("ForceField") then
@@ -1548,7 +1554,7 @@ function Library:ESPPreview(params)
         if count == 0 then viewmodel:Destroy() return end
         viewmodel.Parent = viewport
         preview.Player = viewmodel
-        camera.CFrame = CFrame.new(Vector3.new(0, 2.1, 5.45), Vector3.new(0, 2, 0))
+        camera.CFrame = CFrame.new(Vector3.new(0, 2.1, 6.35), Vector3.new(0, 2, 0))
     end
     function preview:SetBox(visible, color, fillVisible, fillColor)
         box.Visible = visible == true
@@ -1572,6 +1578,7 @@ function Library:ESPPreview(params)
         healthTarget = math.clamp(numeric, 0, 1)
         healthTop = colorValue(topColor, colorValue(bottomColor, healthTop))
         healthBottom = colorValue(bottomColor, healthBottom)
+        if not healthAuto then setHealthRatio(healthTarget, 0.18) end
     end
     function preview:SetHealthCounter(visible)
         healthText.Visible = visible == true
