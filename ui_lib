@@ -124,6 +124,16 @@ local function colorValue(value, fallback)
     return fallback
 end
 
+local function themeLocked(object)
+    local current = object
+    while current do
+        local ok, locked = pcall(function() return current:GetAttribute("NoTheme") end)
+        if ok and locked then return true end
+        current = current.Parent
+    end
+    return false
+end
+
 local b64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local b64Lookup = {}
 for i = 1, #b64Chars do b64Lookup[b64Chars:byte(i)] = i - 1 end
@@ -620,6 +630,7 @@ function Library:CreateColorpicker(data)
     round(swatch, 4)
     stroke(swatch, Library.Theme.Stroke, 0.05)
     local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
+    popup:SetAttribute("NoTheme", true)
     round(popup, 8)
     stroke(popup, Library.Theme.Stroke, 0.05)
     local palette = new("Frame", {Parent = popup, Size = UDim2.fromOffset(138, 108), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.fromHSV(hue, 1, 1), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 9201})
@@ -1326,7 +1337,7 @@ end
 
 
 local function makeWidget(parent, name, position, size)
-    local frame = new("Frame", {Name = name, Parent = parent, Position = position, Size = size, BorderSizePixel = 0, BackgroundColor3 = Library.Theme.Bg})
+    local frame = new("Frame", {Name = name, Parent = parent, Position = position, Size = size, BorderSizePixel = 0, BackgroundColor3 = Library.Theme.Bg, Active = true})
     round(frame, 4)
     stroke(frame, Library.Theme.Stroke, 0.1)
     new("Frame", {Parent = frame, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0, BackgroundColor3 = Library.Theme.Accent}, frame)
@@ -1364,7 +1375,28 @@ function Library:ESPPreview(params)
     end
     dockLeft()
     local title = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -18, 0, 18), Position = UDim2.fromOffset(9, 5), BackgroundTransparency = 1, Text = params.Name or params.name or "ESP Preview", TextColor3 = Library.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left})
-    local viewport = new("ViewportFrame", {Parent = frame, Size = UDim2.new(1, -20, 1, -48), Position = UDim2.fromOffset(10, 30), BackgroundColor3 = Color3.fromRGB(12, 13, 15), BorderSizePixel = 0, Ambient = Color3.fromRGB(180, 180, 180), LightColor = Color3.fromRGB(255, 255, 255)})
+    connect(frame.InputBegan, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then preview.AutoDock = false end end)
+    connect(title.InputBegan, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then preview.AutoDock = false end end)
+    local viewport = new("ViewportFrame", {Parent = frame, Size = UDim2.new(1, -20, 1, -48), Position = UDim2.fromOffset(10, 30), BackgroundColor3 = Color3.fromRGB(12, 13, 15), BorderSizePixel = 0, Ambient = Color3.fromRGB(180, 180, 180), LightColor = Color3.fromRGB(255, 255, 255), Active = true})
+    local espDrag, espDragStart, espStartPos
+    local function espDragBegin(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            preview.AutoDock = false
+            espDrag = true
+            espDragStart = input.Position
+            espStartPos = frame.Position
+        end
+    end
+    connect(frame.InputBegan, espDragBegin)
+    connect(title.InputBegan, espDragBegin)
+    connect(viewport.InputBegan, espDragBegin)
+    connect(UIS.InputChanged, function(input)
+        if espDrag and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - espDragStart
+            frame.Position = UDim2.new(espStartPos.X.Scale, espStartPos.X.Offset + delta.X, espStartPos.Y.Scale, espStartPos.Y.Offset + delta.Y)
+        end
+    end)
+    connect(UIS.InputEnded, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then espDrag = false end end)
     round(viewport, 3)
     stroke(viewport, Library.Theme.Stroke, 0.2)
     local camera = Instance.new("Camera")
@@ -1372,15 +1404,31 @@ function Library:ESPPreview(params)
     camera.Parent = viewport
     viewport.CurrentCamera = camera
     local overlay = new("Frame", {Parent = viewport, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ZIndex = 20})
-    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(86, 175), Position = UDim2.new(0.5, -43, 0.5, -85), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false})
+    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(118, 210), Position = UDim2.new(0.5, -59, 0.5, -102), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
     stroke(box, Library.Theme.Accent, 0, 1)
-    local fill = new("Frame", {Parent = box, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Visible = false})
-    local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(180, 18), Position = UDim2.new(0.5, -90, 0.5, -108), BackgroundTransparency = 1, Text = "Player", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false})
-    local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(180, 18), Position = UDim2.new(0.5, -90, 0.5, 96), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false})
-    local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(180, 18), Position = UDim2.new(0.5, -90, 0.5, 113), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false})
-    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 175), Position = UDim2.new(0.5, -52, 0.5, -85), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
+    local fill = new("Frame", {Parent = box, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Visible = false, ZIndex = 23})
+    local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, -128), BackgroundTransparency = 1, Text = "@EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, -113), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 11, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, 116), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 18), Position = UDim2.new(0.5, -95, 0.5, 133), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 210), Position = UDim2.new(0.5, -70, 0.5, -102), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
     local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
-    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(38, 14), Position = UDim2.new(0.5, -94, 0.5, -92), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
+    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(40, 14), Position = UDim2.new(0.5, -113, 0.5, -109), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
+    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(118, 210), Position = UDim2.new(0.5, -59, 0.5, -102), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
+    local skeletonLines = {}
+    local function skeletonLine(size, position)
+        local line = new("Frame", {Parent = skeleton, Size = size, Position = position, AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, ZIndex = 27})
+        round(line, 1)
+        skeletonLines[#skeletonLines + 1] = line
+        return line
+    end
+    skeletonLine(UDim2.fromOffset(2, 70), UDim2.fromScale(0.5, 0.42))
+    skeletonLine(UDim2.fromOffset(54, 2), UDim2.fromScale(0.5, 0.27))
+    skeletonLine(UDim2.fromOffset(42, 2), UDim2.fromScale(0.5, 0.55))
+    skeletonLine(UDim2.fromOffset(2, 54), UDim2.fromScale(0.32, 0.43))
+    skeletonLine(UDim2.fromOffset(2, 54), UDim2.fromScale(0.68, 0.43))
+    skeletonLine(UDim2.fromOffset(2, 58), UDim2.fromScale(0.4, 0.74))
+    skeletonLine(UDim2.fromOffset(2, 58), UDim2.fromScale(0.6, 0.74))
     local healthCurrent = 1
     local healthTarget = 1
     local healthTop = Color3.fromRGB(80, 255, 120)
@@ -1419,36 +1467,39 @@ function Library:ESPPreview(params)
     function preview:BuildFromModel(model)
         if preview.Player then pcall(function() preview.Player:Destroy() end) end
         if not model or not model.GetDescendants then return end
-        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso") or model:FindFirstChildWhichIsA("BasePart")
         if not root then return end
         local rootCFrame = root.CFrame
         local clone = Instance.new("Model")
         clone.Name = "PreviewModel"
         local base = CFrame.new(0, 1.8, 0) * CFrame.Angles(0, math.rad(180), 0)
+        local scale = 0.78
+        local body = {Head = true, Torso = true, UpperTorso = true, LowerTorso = true, LeftArm = true, RightArm = true, LeftLeg = true, RightLeg = true, LeftUpperArm = true, LeftLowerArm = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true, LeftUpperLeg = true, LeftLowerLeg = true, LeftFoot = true, RightUpperLeg = true, RightLowerLeg = true, RightFoot = true}
         local count = 0
         for _, item in ipairs(model:GetDescendants()) do
-            if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" then
+            if item:IsA("BasePart") and body[item.Name] then
                 local part = item:Clone()
                 for _, child in ipairs(part:GetDescendants()) do
-                    if not (child:IsA("SpecialMesh") or child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceAppearance")) then
-                        child:Destroy()
-                    end
+                    if not (child:IsA("SpecialMesh") or child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceAppearance")) then child:Destroy() end
                 end
                 part.Anchored = true
                 part.CanCollide = false
                 part.CanTouch = false
                 part.CanQuery = false
                 part.CastShadow = false
-                part.CFrame = base * rootCFrame:ToObjectSpace(item.CFrame)
+                part.Size = part.Size * scale
+                local rel = rootCFrame:ToObjectSpace(item.CFrame)
+                local relPos = rel.Position * scale
+                local relRot = rel - rel.Position
+                part.CFrame = base * CFrame.new(relPos) * relRot
                 part.Parent = clone
                 count += 1
-                if count >= 80 then break end
             end
         end
         if count == 0 then return end
         clone.Parent = viewport
         preview.Player = clone
-        camera.CFrame = CFrame.new(Vector3.new(0, 2, 7), Vector3.new(0, 2, 0))
+        camera.CFrame = CFrame.new(Vector3.new(0, 2, 7.4), Vector3.new(0, 2, 0))
     end
     function preview:SetBox(visible, color, fillVisible, fillColor)
         box.Visible = visible == true
@@ -1456,14 +1507,17 @@ function Library:ESPPreview(params)
         fill.Visible = fillVisible == true
         fill.BackgroundColor3 = colorValue(fillColor, colorValue(color, Library.Theme.Accent))
     end
-    function preview:SetName(visible, color, value)
+    function preview:SetName(visible, color, value, displayVisible, displayColor, displayValue)
         name.Visible = visible == true
         name.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then name.Text = tostring(value) end
+        displayName.Visible = displayVisible == true
+        displayName.TextColor3 = colorValue(displayColor, colorValue(color, Library.Theme.Text))
+        if displayValue then displayName.Text = tostring(displayValue) end
     end
     function preview:SetHealth(visible, value, topColor, bottomColor, counterVisible)
         healthBg.Visible = visible ~= false
-        if counterVisible ~= nil then healthText.Visible = counterVisible == true end
+        if counterVisible == nil then healthText.Visible = visible ~= false else healthText.Visible = counterVisible == true end
         local numeric = tonumber(value) or healthTarget
         if numeric > 1 then numeric = numeric / 100 end
         healthTarget = math.clamp(numeric, 0, 1)
@@ -1486,7 +1540,11 @@ function Library:ESPPreview(params)
         weapon.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then weapon.Text = tostring(value) end
     end
-    function preview:SetSkeleton() end
+    function preview:SetSkeleton(visible, color)
+        skeleton.Visible = visible == true
+        local c = colorValue(color, Library.Theme.Accent)
+        for _, line in ipairs(skeletonLines) do line.BackgroundColor3 = c end
+    end
     function preview:SetChams(visible, fillColor, outlineEnabled, outlineColor)
         if not preview.Player then return end
         if not highlight then
@@ -1785,7 +1843,7 @@ function Library:ChangeTheme(key, value)
         if changed then gradient.Color = ColorSequence.new(points) end
     end
     for _, object in ipairs(self.Objects) do
-        if object and object.Parent then
+        if object and object.Parent and not themeLocked(object) then
             if object:IsA("GuiObject") then
                 if shouldReplace(object.BackgroundColor3) then object.BackgroundColor3 = value end
                 if object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox") then
