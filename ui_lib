@@ -1362,16 +1362,16 @@ function Library:ESPPreview(params)
     camera.CFrame = CFrame.new(Vector3.new(0, 2, 7), Vector3.new(0, 2, 0))
     camera.Parent = viewport
     viewport.CurrentCamera = camera
-    local overlay = new("Frame", {Parent = viewport, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1})
+    local overlay = new("Frame", {Parent = viewport, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ZIndex = 20})
     local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(86, 175), Position = UDim2.new(0.5, -43, 0.5, -85), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false})
     stroke(box, Library.Theme.Accent, 0, 1)
     local fill = new("Frame", {Parent = box, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Visible = false})
     local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(180, 18), Position = UDim2.new(0.5, -90, 0.5, -108), BackgroundTransparency = 1, Text = "Player", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false})
     local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(180, 18), Position = UDim2.new(0.5, -90, 0.5, 96), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false})
     local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(180, 18), Position = UDim2.new(0.5, -90, 0.5, 113), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false})
-    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 175), Position = UDim2.new(0.5, -52, 0.5, -85), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false})
-    local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0})
-    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(38, 14), Position = UDim2.new(0.5, -94, 0.5, -92), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false})
+    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 175), Position = UDim2.new(0.5, -52, 0.5, -85), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
+    local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
+    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(38, 14), Position = UDim2.new(0.5, -94, 0.5, -92), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
     local healthCurrent = 1
     local healthTarget = 1
     local healthTop = Color3.fromRGB(80, 255, 120)
@@ -1431,7 +1431,7 @@ function Library:ESPPreview(params)
         if value then name.Text = tostring(value) end
     end
     function preview:SetHealth(visible, value, topColor, bottomColor, counterVisible)
-        healthBg.Visible = visible == true
+        healthBg.Visible = visible ~= false
         if counterVisible ~= nil then healthText.Visible = counterVisible == true end
         local numeric = tonumber(value) or healthTarget
         if numeric > 1 then numeric = numeric / 100 end
@@ -1767,7 +1767,8 @@ end
 
 local function configPath(name)
     name = tostring(name or "default"):gsub("%.json$", "")
-    name = name:gsub("[/\]", "_"):gsub("[%c%:%*%?%"%<%>%|]", "_")
+    name = name:gsub("/", "_"):gsub("\\", "_")
+    name = name:gsub('[%c:*?"<>|]', "_")
     name = name:gsub("^%s+", ""):gsub("%s+$", "")
     if name == "" then name = "default" end
     return Library.Folders.Configs .. "/" .. name .. ".json", name
