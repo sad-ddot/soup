@@ -836,7 +836,7 @@ function Library:CreateKeybind(data)
     for _, mode in ipairs({"Hold", "Toggle", "Always"}) do
         local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9102}, popupContent)
         new("UIPadding", {PaddingLeft = UDim.new(0, 10)}, option)
-        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
+        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(-10, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
         round(line, 2)
         modeButtons[mode] = option
         modeLines[mode] = line
