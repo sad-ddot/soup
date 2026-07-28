@@ -1470,31 +1470,85 @@ function Library:ESPPreview(params)
     function preview:AddObject(object) if object then object.Parent = viewport end end
     function preview:BuildFromModel(model)
         if preview.Player then pcall(function() preview.Player:Destroy() end) end
-        if not model or not model.Clone then return end
-        local oldArchivable = model.Archivable
-        pcall(function() model.Archivable = true end)
-        local clone = model:Clone()
-        pcall(function() model.Archivable = oldArchivable end)
-        if not clone then return end
-        for _, item in ipairs(clone:GetDescendants()) do
-            if item:IsA("Script") or item:IsA("LocalScript") or item:IsA("ModuleScript") or item:IsA("Animator") or item:IsA("AnimationController") or item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") or item:IsA("Smoke") or item:IsA("Fire") or item:IsA("Sparkles") or item:IsA("Sound") or item:IsA("BillboardGui") or item:IsA("SurfaceGui") or item:IsA("ProximityPrompt") or item:IsA("Highlight") or item:IsA("ForceField") then
-                item:Destroy()
-            elseif item:IsA("BasePart") then
-                item.Anchored = true
-                item.CanCollide = false
-                item.CanTouch = false
-                item.CanQuery = false
-                item.CastShadow = false
+        if not model or not model.GetDescendants then return end
+        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso") or model:FindFirstChildWhichIsA("BasePart")
+        if not root then return end
+        local rootCFrame = root.CFrame
+        local viewmodel = Instance.new("Model")
+        viewmodel.Name = "PreviewModel"
+        local hum = model:FindFirstChildOfClass("Humanoid")
+        if hum then
+            local humClone = Instance.new("Humanoid")
+            humClone.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+            humClone.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+            humClone.Parent = viewmodel
+            for _, state in ipairs(Enum.HumanoidStateType:GetEnumItems()) do
+                pcall(function() humClone:SetStateEnabled(state, false) end)
             end
         end
-        clone.Parent = viewport
-        preview.Player = clone
-        local root = clone:FindFirstChild("HumanoidRootPart") or clone:FindFirstChild("Torso") or clone:FindFirstChild("UpperTorso") or clone:FindFirstChildWhichIsA("BasePart")
-        if root then
-            clone:PivotTo(CFrame.new(0, 1.8, 0) * CFrame.Angles(0, math.rad(180), 0))
-            pcall(function() clone:ScaleTo(0.78) end)
+        for _, item in ipairs(model:GetChildren()) do
+            if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") then
+                local ok, cloneItem = pcall(function() return item:Clone() end)
+                if ok and cloneItem then cloneItem.Parent = viewmodel end
+            end
         end
-        camera.CFrame = CFrame.new(Vector3.new(0, 2, 8.2), Vector3.new(0, 2, 0))
+        local base = CFrame.new(0, 1.75, 0) * CFrame.Angles(0, math.rad(180), 0)
+        local scale = 1.03
+        local function cleanPart(part)
+            for _, child in ipairs(part:GetDescendants()) do
+                if child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("Weld") or child:IsA("WeldConstraint") or child:IsA("Motor6D") or child:IsA("Attachment") or child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") or child:IsA("Smoke") or child:IsA("Fire") or child:IsA("Sparkles") or child:IsA("Sound") or child:IsA("BillboardGui") or child:IsA("SurfaceGui") or child:IsA("ProximityPrompt") or child:IsA("Highlight") or child:IsA("ForceField") then
+                    child:Destroy()
+                end
+            end
+            part.Anchored = true
+            part.CanCollide = false
+            part.CanTouch = false
+            part.CanQuery = false
+            part.CastShadow = false
+            part.Size = part.Size * scale
+        end
+        local clonedAccessories = {}
+        local count = 0
+        for _, item in ipairs(model:GetDescendants()) do
+            if item:IsA("Accoutrement") and not clonedAccessories[item] then
+                clonedAccessories[item] = true
+                local ok, acc = pcall(function() return item:Clone() end)
+                if ok and acc then
+                    for _, child in ipairs(acc:GetDescendants()) do
+                        if child:IsA("BasePart") then
+                            cleanPart(child)
+                            local original = item:FindFirstChild(child.Name, true)
+                            if original and original:IsA("BasePart") then
+                                local rel = rootCFrame:ToObjectSpace(original.CFrame)
+                                local relPos = rel.Position * scale
+                                local relRot = rel - rel.Position
+                                child.CFrame = base * CFrame.new(relPos) * relRot
+                            end
+                        elseif child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("Attachment") or child:IsA("Weld") or child:IsA("WeldConstraint") or child:IsA("Motor6D") then
+                            child:Destroy()
+                        end
+                    end
+                    acc.Parent = viewmodel
+                    count += 1
+                end
+            elseif item:IsA("BasePart") and not item:FindFirstAncestorWhichIsA("Accoutrement") and item.Name ~= "HumanoidRootPart" then
+                local ok, part = pcall(function() return item:Clone() end)
+                if ok and part then
+                    cleanPart(part)
+                    local rel = rootCFrame:ToObjectSpace(item.CFrame)
+                    local relPos = rel.Position * scale
+                    local relRot = rel - rel.Position
+                    part.CFrame = base * CFrame.new(relPos) * relRot
+                    part.Parent = viewmodel
+                    count += 1
+                end
+            end
+            if count >= 120 then break end
+        end
+        if count == 0 then viewmodel:Destroy() return end
+        viewmodel.Parent = viewport
+        preview.Player = viewmodel
+        camera.CFrame = CFrame.new(Vector3.new(0, 2.1, 5.45), Vector3.new(0, 2, 0))
     end
     function preview:SetBox(visible, color, fillVisible, fillColor)
         box.Visible = visible == true
