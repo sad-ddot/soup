@@ -481,43 +481,52 @@ function Library:CreateColorpicker(data)
     data = data or {}
     local state = {Color = data.Default or Color3.new(1, 1, 1), Transparency = data.Alpha or 0}
     local flag = data.Flag
+    local hue, sat, val = state.Color:ToHSV()
     self.Flags[flag] = state
     local swatch = new("TextButton", {Size = UDim2.fromOffset(30, 14), Position = UDim2.new(1, -34, 0.5, -7), BackgroundColor3 = state.Color, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
     round(swatch, 4)
     stroke(swatch, Library.Theme.Stroke, 0.05)
-    local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(180, 126), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
-    round(popup, 6)
+    local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
+    round(popup, 8)
     stroke(popup, Library.Theme.Stroke, 0.05)
-    new("UIGradient", {Parent = popup, Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))})
-    local title = new("TextLabel", {Parent = popup, Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 6), BackgroundTransparency = 1, Text = data.Name or "Color", TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9201})
-    local colors = {Color3.fromRGB(255,255,255), Library.Theme.Accent, Library.Theme.Accent2, Color3.fromRGB(255,80,80), Color3.fromRGB(80,255,120), Color3.fromRGB(255,220,70), Color3.fromRGB(180,120,255), Color3.fromRGB(0,0,0)}
-    local grid = new("Frame", {Parent = popup, Size = UDim2.fromOffset(164, 44), Position = UDim2.fromOffset(8, 28), BackgroundTransparency = 1, ZIndex = 9201})
-    new("UIGridLayout", {Parent = grid, CellSize = UDim2.fromOffset(35, 18), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder})
-    local alpha = new("TextButton", {Parent = popup, Size = UDim2.fromOffset(164, 22), Position = UDim2.fromOffset(8, 80), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Text = "Alpha: " .. tostring(math.floor(state.Transparency * 100)) .. "%", TextColor3 = Library.Theme.Dim, TextSize = 11, AutoButtonColor = false, ZIndex = 9201})
-    round(alpha, 3)
-    stroke(alpha, Library.Theme.Stroke, 0.15)
+    local palette = new("Frame", {Parent = popup, Size = UDim2.fromOffset(138, 108), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.fromHSV(hue, 1, 1), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 9201})
+    round(palette, 5)
+    local satLayer = new("Frame", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9202})
+    new("UIGradient", {Parent = satLayer, Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})})
+    local valLayer = new("Frame", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 9203})
+    new("UIGradient", {Parent = valLayer, Rotation = 90, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)})})
+    local palHit = new("TextButton", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9206})
+    local palKnob = new("Frame", {Parent = popup, Size = UDim2.fromOffset(9, 9), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9210})
+    round(palKnob, 5)
+    stroke(palKnob, Color3.new(0, 0, 0), 0.3)
+    local hueBar = new("Frame", {Parent = popup, Size = UDim2.fromOffset(14, 108), Position = UDim2.fromOffset(152, 8), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9201})
+    round(hueBar, 4)
+    new("UIGradient", {Parent = hueBar, Rotation = 90, Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHSV(0, 1, 1)), ColorSequenceKeypoint.new(1/6, Color3.fromHSV(1/6, 1, 1)), ColorSequenceKeypoint.new(2/6, Color3.fromHSV(2/6, 1, 1)), ColorSequenceKeypoint.new(3/6, Color3.fromHSV(3/6, 1, 1)), ColorSequenceKeypoint.new(4/6, Color3.fromHSV(4/6, 1, 1)), ColorSequenceKeypoint.new(5/6, Color3.fromHSV(5/6, 1, 1)), ColorSequenceKeypoint.new(1, Color3.fromHSV(1, 1, 1))})})
+    local hueHit = new("TextButton", {Parent = hueBar, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9202})
+    local hueKnob = new("Frame", {Parent = hueBar, Size = UDim2.new(1, 4, 0, 4), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9203})
+    round(hueKnob, 2)
+    stroke(hueKnob, Color3.new(0, 0, 0), 0.4)
+    local alphaBar = new("Frame", {Parent = popup, Size = UDim2.fromOffset(170, 12), Position = UDim2.fromOffset(8, 122), BackgroundColor3 = state.Color, BorderSizePixel = 0, ZIndex = 9201})
+    round(alphaBar, 4)
+    new("UIGradient", {Parent = alphaBar, Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)})})
+    local alphaHit = new("TextButton", {Parent = alphaBar, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9202})
+    local alphaKnob = new("Frame", {Parent = alphaBar, Size = UDim2.new(0, 4, 1, 4), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9203})
+    round(alphaKnob, 2)
+    stroke(alphaKnob, Color3.new(0, 0, 0), 0.4)
+    local hexLabel = new("TextLabel", {Parent = popup, Size = UDim2.fromOffset(170, 14), Position = UDim2.fromOffset(8, 139), BackgroundTransparency = 1, TextColor3 = Library.Theme.Dim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9201})
     local open = false
-    local function apply(color, transparency)
-        if color then state.Color = color end
-        if transparency ~= nil then state.Transparency = transparency end
+    local function apply()
+        state.Color = Color3.fromHSV(hue, sat, val)
         swatch.BackgroundColor3 = state.Color
-        alpha.Text = "Alpha: " .. tostring(math.floor(state.Transparency * 100)) .. "%"
+        palette.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+        alphaBar.BackgroundColor3 = state.Color
+        hexLabel.Text = "#" .. state.Color:ToHex():upper()
+        palKnob.Position = UDim2.fromOffset(8 + sat * 138, 8 + (1 - val) * 108)
+        hueKnob.Position = UDim2.new(0.5, 0, hue, 0)
+        alphaKnob.Position = UDim2.new(1 - state.Transparency, 0, 0.5, 0)
         Library.Flags[flag] = state
         Library:SafeCall(data.Callback, state.Color, state.Transparency)
     end
-    for _, color in ipairs(colors) do
-        local button = new("TextButton", {Parent = grid, BackgroundColor3 = color, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 9202})
-        round(button, 3)
-        stroke(button, Library.Theme.Stroke, 0.15)
-        connect(button.MouseButton1Click, function() apply(color) end)
-    end
-    connect(alpha.MouseButton1Click, function()
-        local values = {0, 0.25, 0.5, 0.75}
-        local index = 1
-        for i, value in ipairs(values) do if math.abs(state.Transparency - value) < 0.01 then index = i + 1 end end
-        if index > #values then index = 1 end
-        apply(nil, values[index])
-    end)
     local function place()
         popup.Position = UDim2.fromOffset(swatch.AbsolutePosition.X - data.Window.PopupLayer.AbsolutePosition.X, swatch.AbsolutePosition.Y - data.Window.PopupLayer.AbsolutePosition.Y + swatch.AbsoluteSize.Y + 4)
     end
@@ -531,6 +540,7 @@ function Library:CreateColorpicker(data)
         Library.OpenFrames = {}
         open = true
         place()
+        apply()
         popup.Visible = true
         popup.GroupTransparency = 1
         tween(popup, {GroupTransparency = 0}, 0.14)
@@ -538,22 +548,51 @@ function Library:CreateColorpicker(data)
     end
     connect(swatch.MouseButton1Click, function() if open then close() else show() end end)
     connect(RunService.RenderStepped, function() if open and popup.Visible then place() end end)
+    local palDrag, hueDrag, alphaDrag = false, false, false
+    local function updatePal(x, y)
+        local p = palette.AbsolutePosition
+        local s = palette.AbsoluteSize
+        sat = math.clamp((x - p.X) / s.X, 0, 1)
+        val = 1 - math.clamp((y - p.Y) / s.Y, 0, 1)
+        apply()
+    end
+    local function updateHue(y)
+        local p = hueBar.AbsolutePosition
+        local s = hueBar.AbsoluteSize
+        hue = math.clamp((y - p.Y) / s.Y, 0, 0.999)
+        apply()
+    end
+    local function updateAlpha(x)
+        local p = alphaBar.AbsolutePosition
+        local s = alphaBar.AbsoluteSize
+        state.Transparency = 1 - math.clamp((x - p.X) / s.X, 0, 1)
+        apply()
+    end
+    connect(palHit.InputBegan, function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then palDrag = true updatePal(i.Position.X, i.Position.Y) end end)
+    connect(hueHit.InputBegan, function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then hueDrag = true updateHue(i.Position.Y) end end)
+    connect(alphaHit.InputBegan, function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then alphaDrag = true updateAlpha(i.Position.X) end end)
+    connect(UIS.InputChanged, function(i)
+        if i.UserInputType == Enum.UserInputType.MouseMovement then
+            if palDrag then updatePal(i.Position.X, i.Position.Y) end
+            if hueDrag then updateHue(i.Position.Y) end
+            if alphaDrag then updateAlpha(i.Position.X) end
+        end
+    end)
+    connect(UIS.InputEnded, function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then palDrag = false hueDrag = false alphaDrag = false end end)
     connect(UIS.InputBegan, function(input)
         if not open or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        task.defer(function()
-            if open and not inBounds(input.Position, popup) and not inBounds(input.Position, swatch) then close() end
-        end)
+        task.defer(function() if open and not inBounds(input.Position, popup) and not inBounds(input.Position, swatch) then close() end end)
     end)
     self.SetFlags[flag] = function(value)
         if type(value) == "table" then
             if typeof(value.Color) == "Color3" then state.Color = value.Color end
             if value.Transparency ~= nil then state.Transparency = value.Transparency end
             if value.r then state.Color = Color3.new(value.r, value.g, value.b) state.Transparency = value.tr or 0 end
-        elseif typeof(value) == "Color3" then
-            state.Color = value
-        end
-        apply(state.Color, state.Transparency)
+        elseif typeof(value) == "Color3" then state.Color = value end
+        hue, sat, val = state.Color:ToHSV()
+        apply()
     end
+    apply()
     return {Set = self.SetFlags[flag], Get = function() return state end, Instance = swatch}
 end
 
