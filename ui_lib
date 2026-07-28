@@ -672,7 +672,7 @@ function Library:CreateKeybind(data)
         bind.Mode = mode
         bind.Toggled = mode == "Always"
         bind.active = bind.Toggled
-        for modeName, btn in pairs(modeButtons) do btn.TextColor3 = modeName == mode and Library.Theme.Accent or Color3.fromRGB(245, 245, 245) end
+        for _, btn in pairs(modeButtons) do btn.TextColor3 = Color3.fromRGB(245, 245, 245) end
         updateFlag()
     end
     local function closePopup()
@@ -702,7 +702,7 @@ function Library:CreateKeybind(data)
         end)
     end)
     for _, mode in ipairs({"Hold", "Toggle", "Always"}) do
-        local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = mode == bind.Mode and Library.Theme.Accent or Color3.fromRGB(245, 245, 245), TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9101}, popup)
+        local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(245, 245, 245), TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9101}, popup)
         new("UIPadding", {PaddingLeft = UDim.new(0, 8)}, option)
         modeButtons[mode] = option
         connect(option.MouseEnter, function() tween(option, {BackgroundTransparency = 0.86}, 0.1) end)
@@ -898,7 +898,7 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     end
     local function paint()
         for option, label in pairs(labels) do
-            label.TextColor3 = isSelected(option) and Library.Theme.Accent or Color3.fromRGB(245, 245, 245)
+            label.TextColor3 = Color3.fromRGB(245, 245, 245)
         end
     end
     local function updateValue(silent)
@@ -943,7 +943,7 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         end
         for _, option in ipairs(options) do
             local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9003}, scroll)
-            local label = new("TextLabel", {Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = isSelected(option) and Library.Theme.Accent or Color3.fromRGB(245, 245, 245), TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9004}, row)
+            local label = new("TextLabel", {Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(245, 245, 245), TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9004}, row)
             labels[option] = label
             connect(row.MouseEnter, function() tween(row, {BackgroundTransparency = 0.88}, 0.1) end)
             connect(row.MouseLeave, function() tween(row, {BackgroundTransparency = 1}, 0.1) end)
@@ -992,12 +992,12 @@ end
 
 function SectionMethods:Button(label, callback)
     if type(label) == "table" then callback = label.Func or label.Callback; label = label.Text or label.Name end
-    local button = new("TextButton", {Size = UDim2.new(1, 0, 0, 23), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Text = label, TextColor3 = Library.Theme.Text, TextSize = 12, AutoButtonColor = false}, self.Body)
+    local button = new("TextButton", {Size = UDim2.new(1, 0, 0, 23), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Text = label, TextColor3 = Color3.fromRGB(245, 245, 245), TextSize = 12, AutoButtonColor = false}, self.Body)
     round(button, 3)
     stroke(button, Library.Theme.Stroke, 0.15)
-    new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(26, 28, 33))}, button)
-    connect(button.MouseEnter, function() tween(button, {BackgroundColor3 = Color3.fromRGB(38, 40, 46)}, 0.12) end)
-    connect(button.MouseLeave, function() tween(button, {BackgroundColor3 = Library.Theme.Input}, 0.12) end)
+    local buttonGradient = new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(26, 28, 33))}, button)
+    connect(button.MouseEnter, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(18, 20, 24), Color3.fromRGB(34, 37, 44)) end)
+    connect(button.MouseLeave, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(26, 28, 33)) end)
     connect(button.MouseButton1Click, function() Library:SafeCall(callback) end)
     return button
 end
@@ -1220,6 +1220,19 @@ function Library:ESPPreview(params)
     local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(180, 18), Position = UDim2.new(0.5, -90, 0.5, 113), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 12, TextStrokeTransparency = 0.4, Visible = false})
     local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(4, 175), Position = UDim2.new(0.5, -52, 0.5, -85), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false})
     local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0})
+    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(38, 14), Position = UDim2.new(0.5, -94, 0.5, -92), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0.4, Visible = false})
+    local healthCurrent = 1
+    local healthTarget = 1
+    local healthTop = Color3.fromRGB(80, 255, 120)
+    local healthBottom = Color3.fromRGB(255, 80, 80)
+    connect(RunService.RenderStepped, function(dt)
+        local alpha = math.clamp(dt * 12, 0, 1)
+        healthCurrent += (healthTarget - healthCurrent) * alpha
+        if math.abs(healthCurrent - healthTarget) < 0.001 then healthCurrent = healthTarget end
+        healthFill.Size = UDim2.new(1, 0, healthCurrent, 0)
+        healthFill.BackgroundColor3 = healthBottom:Lerp(healthTop, healthCurrent)
+        healthText.Text = tostring(math.floor(healthCurrent * 100 + 0.5))
+    end)
     local highlight
     function preview:SetVisibility(value) frame.Visible = value == true end
     function preview:SetText(value) title.Text = text(value) end
@@ -1245,10 +1258,17 @@ function Library:ESPPreview(params)
         name.TextColor3 = color or Library.Theme.Text
         if value then name.Text = tostring(value) end
     end
-    function preview:SetHealth(visible, value, topColor, bottomColor)
+    function preview:SetHealth(visible, value, topColor, bottomColor, counterVisible)
         healthBg.Visible = visible == true
-        healthFill.Size = UDim2.new(1, 0, math.clamp(tonumber(value) or 1, 0, 1), 0)
-        healthFill.BackgroundColor3 = topColor or bottomColor or Color3.fromRGB(80, 255, 120)
+        if counterVisible ~= nil then healthText.Visible = counterVisible == true end
+        local numeric = tonumber(value) or 1
+        if numeric > 1 then numeric = numeric / 100 end
+        healthTarget = math.clamp(numeric, 0, 1)
+        if typeof(topColor) == "Color3" then healthTop = topColor end
+        if typeof(bottomColor) == "Color3" then healthBottom = bottomColor end
+    end
+    function preview:SetHealthCounter(visible)
+        healthText.Visible = visible == true
     end
     function preview:SetDistance(visible, color, value)
         distance.Visible = visible == true
@@ -1282,7 +1302,7 @@ end
 function Library:TargetIndicator()
     local window = self.Windows[#self.Windows]
     local parent = window and window.Gui or getParent()
-    local indicator = {Items = {}, StatusItems = {}, StatusOrder = {}, CurrentStatus = nil}
+    local indicator = {Items = {}, CurrentStatus = nil}
     local frame = makeWidget(parent, "TargetIndicator", UDim2.new(0.424, 0, 0.793, 0), UDim2.fromOffset(286, 112))
     local avatar = new("ImageLabel", {Parent = frame, Size = UDim2.fromOffset(58, 58), Position = UDim2.fromOffset(10, 10), BackgroundTransparency = 1, Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"})
     round(avatar, 3)
@@ -1295,7 +1315,7 @@ function Library:TargetIndicator()
     round(hpBg, 2)
     round(hpFill, 2)
     local hpText = new("TextLabel", {Parent = hpBg, Size = UDim2.new(1, -6, 1, 0), Position = UDim2.fromOffset(3, 0), BackgroundTransparency = 1, Text = "100/100", TextColor3 = Library.Theme.Text, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Right})
-    local status = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -88, 0, 16), Position = UDim2.fromOffset(78, 82), BackgroundTransparency = 1, Text = "", TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Visible = false})
+    local status = new("TextLabel", {Parent = frame, Size = UDim2.fromOffset(132, 16), Position = UDim2.fromOffset(78, 82), BackgroundTransparency = 1, Text = "", TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Library.Font, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, TextStrokeTransparency = 1, Visible = false})
     local aliases = {Invisible = "Unvisible", NotVisible = "Unvisible", HitScan = "Hitscanned", Hitscan = "Hitscanned", Resolver = "Resolved", Resolved = "Resolved"}
     local allowed = {Visible = true, Unvisible = true, Manipulating = true, Manipulated = true, Hitscanned = true, Resolved = true}
     local function normalizeStatus(name)
@@ -1373,8 +1393,8 @@ function Library:InventoryViewer(params)
     local frame = makeWidget(parent, "InventoryViewer", UDim2.fromOffset(860, 776), UDim2.fromOffset(372, 300))
     local title = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -18, 0, 18), Position = UDim2.fromOffset(9, 6), BackgroundTransparency = 1, Text = params.Name or params.name or "Inventory Viewer", TextColor3 = Library.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left})
     local summary = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -18, 0, 16), Position = UDim2.fromOffset(9, 22), BackgroundTransparency = 1, Text = "0 items", TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left})
-    local target = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -18, 0, 16), Position = UDim2.fromOffset(9, 40), BackgroundTransparency = 1, Text = "No target selected", TextTransparency = 0.35, TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd})
-    local body = new("ScrollingFrame", {Parent = frame, Size = UDim2.new(1, -18, 1, -80), Position = UDim2.fromOffset(9, 72), BackgroundColor3 = Color3.fromRGB(12, 13, 15), BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y})
+    local target = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -18, 0, 16), Position = UDim2.fromOffset(9, 38), BackgroundTransparency = 1, Text = "No target selected", TextTransparency = 0.35, TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd})
+    local body = new("ScrollingFrame", {Parent = frame, Size = UDim2.new(1, -18, 1, -74), Position = UDim2.fromOffset(9, 66), BackgroundColor3 = Color3.fromRGB(12, 13, 15), BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y})
     round(body, 3)
     stroke(body, Library.Theme.Stroke, 0.15)
     new("UIListLayout", {Parent = body, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6)})
