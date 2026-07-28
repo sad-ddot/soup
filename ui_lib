@@ -1367,8 +1367,12 @@ function Library:ESPPreview(params)
     local parent = window and window.Gui or getParent()
     local preview = {Player = nil, Items = {}, AutoDock = true}
     local frame = makeWidget(parent, "ESPPreview", UDim2.fromOffset(860, 430), UDim2.fromOffset(258, 334))
+    local lastDock = -1
     local function dockLeft()
         if not preview.AutoDock or not window or not window.Main or not frame.Parent then return end
+        local now = os.clock()
+        if now - lastDock < 0.08 then return end
+        lastDock = now
         local p = window.Main.AbsolutePosition
         local s = frame.AbsoluteSize
         frame.Position = UDim2.fromOffset(math.max(4, p.X - s.X - 12), p.Y + 56)
@@ -1466,40 +1470,31 @@ function Library:ESPPreview(params)
     function preview:AddObject(object) if object then object.Parent = viewport end end
     function preview:BuildFromModel(model)
         if preview.Player then pcall(function() preview.Player:Destroy() end) end
-        if not model or not model.GetDescendants then return end
-        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso") or model:FindFirstChildWhichIsA("BasePart")
-        if not root then return end
-        local rootCFrame = root.CFrame
-        local clone = Instance.new("Model")
-        clone.Name = "PreviewModel"
-        local base = CFrame.new(0, 1.8, 0) * CFrame.Angles(0, math.rad(180), 0)
-        local scale = 0.78
-        local body = {Head = true, Torso = true, UpperTorso = true, LowerTorso = true, LeftArm = true, RightArm = true, LeftLeg = true, RightLeg = true, LeftUpperArm = true, LeftLowerArm = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true, LeftUpperLeg = true, LeftLowerLeg = true, LeftFoot = true, RightUpperLeg = true, RightLowerLeg = true, RightFoot = true}
-        local count = 0
-        for _, item in ipairs(model:GetDescendants()) do
-            if item:IsA("BasePart") and body[item.Name] then
-                local part = item:Clone()
-                for _, child in ipairs(part:GetDescendants()) do
-                    if not (child:IsA("SpecialMesh") or child:IsA("Decal") or child:IsA("Texture") or child:IsA("SurfaceAppearance")) then child:Destroy() end
-                end
-                part.Anchored = true
-                part.CanCollide = false
-                part.CanTouch = false
-                part.CanQuery = false
-                part.CastShadow = false
-                part.Size = part.Size * scale
-                local rel = rootCFrame:ToObjectSpace(item.CFrame)
-                local relPos = rel.Position * scale
-                local relRot = rel - rel.Position
-                part.CFrame = base * CFrame.new(relPos) * relRot
-                part.Parent = clone
-                count += 1
+        if not model or not model.Clone then return end
+        local oldArchivable = model.Archivable
+        pcall(function() model.Archivable = true end)
+        local clone = model:Clone()
+        pcall(function() model.Archivable = oldArchivable end)
+        if not clone then return end
+        for _, item in ipairs(clone:GetDescendants()) do
+            if item:IsA("Script") or item:IsA("LocalScript") or item:IsA("ModuleScript") or item:IsA("Animator") or item:IsA("AnimationController") or item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") or item:IsA("Smoke") or item:IsA("Fire") or item:IsA("Sparkles") or item:IsA("Sound") or item:IsA("BillboardGui") or item:IsA("SurfaceGui") or item:IsA("ProximityPrompt") or item:IsA("Highlight") or item:IsA("ForceField") then
+                item:Destroy()
+            elseif item:IsA("BasePart") then
+                item.Anchored = true
+                item.CanCollide = false
+                item.CanTouch = false
+                item.CanQuery = false
+                item.CastShadow = false
             end
         end
-        if count == 0 then return end
         clone.Parent = viewport
         preview.Player = clone
-        camera.CFrame = CFrame.new(Vector3.new(0, 2, 7.4), Vector3.new(0, 2, 0))
+        local root = clone:FindFirstChild("HumanoidRootPart") or clone:FindFirstChild("Torso") or clone:FindFirstChild("UpperTorso") or clone:FindFirstChildWhichIsA("BasePart")
+        if root then
+            clone:PivotTo(CFrame.new(0, 1.8, 0) * CFrame.Angles(0, math.rad(180), 0))
+            pcall(function() clone:ScaleTo(0.78) end)
+        end
+        camera.CFrame = CFrame.new(Vector3.new(0, 2, 8.2), Vector3.new(0, 2, 0))
     end
     function preview:SetBox(visible, color, fillVisible, fillColor)
         box.Visible = visible == true
