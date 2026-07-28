@@ -248,7 +248,7 @@ function Library:Window(data)
     local parent = getParent()
     local gui = new("ScreenGui", {Name = title .. "_" .. tostring(math.random(10000, 99999)), IgnoreGuiInset = true, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parent)
     local popupLayer = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 9000}, gui)
-    local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, -350, 0.5, -225), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1}, gui)
+    local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1}, gui)
     local mainScale = new("UIScale", {Scale = 0.985}, main)
     round(main, 4)
     local mainStroke = stroke(main, Color3.fromRGB(100, 104, 118), 0, 3)
@@ -310,9 +310,10 @@ function Library:Window(data)
         logo.Position = UDim2.fromOffset(10, 1 + math.sin(os.clock() * 1.8) * 2)
         local activeTab = window.Tabs[window.CurrentPage]
         if activeTab and activeTab.AbsoluteSize.X > 0 then
+            local sc = math.max(mainScale.Scale, 0.001)
             underline.BackgroundTransparency = 0
-            underline.Position = UDim2.fromOffset(activeTab.AbsolutePosition.X - main.AbsolutePosition.X, 33)
-            underline.Size = UDim2.fromOffset(activeTab.AbsoluteSize.X, 2)
+            underline.Position = UDim2.fromOffset((activeTab.AbsolutePosition.X - main.AbsolutePosition.X) / sc, 33)
+            underline.Size = UDim2.fromOffset(activeTab.AbsoluteSize.X / sc, 2)
         end
     end)
     return window
@@ -412,7 +413,8 @@ function WindowMethods:SelectPage(name)
             self.Underline.BackgroundTransparency = 0
             self.UnderlineBloom.Transparency = 0.48
             tween(self.UnderlineBloom, {Transparency = 1}, 0.34)
-            tween(self.Underline, {Position = UDim2.fromOffset(tab.AbsolutePosition.X - self.Main.AbsolutePosition.X, 33), Size = UDim2.fromOffset(tab.AbsoluteSize.X, 2)}, 0.25)
+            local sc = self.MainScale and math.max(self.MainScale.Scale, 0.001) or 1
+            tween(self.Underline, {Position = UDim2.fromOffset((tab.AbsolutePosition.X - self.Main.AbsolutePosition.X) / sc, 33), Size = UDim2.fromOffset(tab.AbsoluteSize.X / sc, 2)}, 0.25)
         end
     end)
 end
@@ -562,7 +564,7 @@ function SectionMethods:Checkbox(name, default, callback)
     local box = new("Frame", {Size = UDim2.fromOffset(13, 13), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, row)
     round(box, 2)
     local boxStroke = stroke(box, value and Library.Theme.Accent or Library.Theme.Stroke, 0.08)
-    local gradient = new("UIGradient", {Rotation = 90, Color = value and ColorSequence.new(Color3.fromRGB(112, 151, 235)) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
+    local gradient = new("UIGradient", {Rotation = 90, Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
     local scale = new("UIScale", {Scale = 1}, box)
     local glow = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = box.ZIndex - 1}, box)
     round(glow, 3)
@@ -577,10 +579,11 @@ function SectionMethods:Checkbox(name, default, callback)
     local function apply(newValue, silent)
         value = newValue == true
         Library.Flags[flag] = value
-        gradient.Color = value and ColorSequence.new(Color3.fromRGB(112, 151, 235)) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
+        gradient.Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
         boxStroke.Color = value and Library.Theme.Accent or Library.Theme.Stroke
+        bloom.BackgroundColor3 = Library.Theme.Accent
         tween(label, {TextColor3 = value and Library.Theme.Text or Library.Theme.Dim}, 0.14)
-        for i, gs in ipairs(glowStrokes) do tween(gs, {Transparency = value and (0.6 + i * 0.1) or 1}, 0.14) end
+        for i, gs in ipairs(glowStrokes) do gs.Color = Library.Theme.Accent tween(gs, {Transparency = value and (0.6 + i * 0.1) or 1}, 0.14) end
         tween(bloom, {BackgroundTransparency = value and 0.9 or 1}, 0.14)
         if value then scale.Scale = 0.82 tween(scale, {Scale = 1}, 0.2) end
         if not silent then Library:SafeCall(callback, value) end
@@ -1595,8 +1598,9 @@ function Library:ESPPreview(params)
         if displayValue then displayName.Text = tostring(displayValue) end
     end
     function preview:SetHealth(visible, value, topColor, bottomColor, counterVisible)
-        healthBg.Visible = visible ~= false
-        if counterVisible == nil then healthText.Visible = visible ~= false else healthText.Visible = counterVisible == true end
+        local show = visible == true
+        healthBg.Visible = show
+        healthText.Visible = show and counterVisible == true
         local numeric = tonumber(value) or healthTarget
         if numeric > 1 then numeric = numeric / 100 end
         healthTarget = math.clamp(numeric, 0, 1)
@@ -1605,7 +1609,7 @@ function Library:ESPPreview(params)
         if not healthAuto then setHealthRatio(healthTarget, 0.18) end
     end
     function preview:SetHealthCounter(visible)
-        healthText.Visible = visible == true
+        healthText.Visible = healthBg.Visible and visible == true
     end
     function preview:SetAutoHealthAnimation(value)
         healthAuto = value ~= false
@@ -1620,10 +1624,9 @@ function Library:ESPPreview(params)
         weapon.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then weapon.Text = tostring(value) end
     end
-    function preview:SetSkeleton(visible, color)
-        skeleton.Visible = visible == true
-        local c = colorValue(color, Library.Theme.Accent)
-        for _, line in ipairs(skeletonLines) do line.BackgroundColor3 = c end
+    function preview:SetSkeleton()
+        skeleton.Visible = false
+        for _, line in ipairs(skeletonLines) do line.Visible = false end
     end
     function preview:SetChams(visible, fillColor, outlineEnabled, outlineColor)
         if not preview.Player then return end
@@ -1885,6 +1888,12 @@ function Library:SetScale(value)
     self.UIScale = value
     for _, window in ipairs(self.Windows) do
         if window.MainScale then window.MainScale.Scale = value end
+        local tab = window.Tabs and window.Tabs[window.CurrentPage]
+        if tab and tab.AbsoluteSize.X > 0 then
+            local sc = window.MainScale and math.max(window.MainScale.Scale, 0.001) or 1
+            window.Underline.Position = UDim2.fromOffset((tab.AbsolutePosition.X - window.Main.AbsolutePosition.X) / sc, 33)
+            window.Underline.Size = UDim2.fromOffset(tab.AbsoluteSize.X / sc, 2)
+        end
     end
 end
 
