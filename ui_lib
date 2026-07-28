@@ -1515,9 +1515,6 @@ function Library:ESPPreview(params)
             humClone.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
             humClone.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
             humClone.Parent = viewmodel
-            for _, state in ipairs(Enum.HumanoidStateType:GetEnumItems()) do
-                pcall(function() humClone:SetStateEnabled(state, false) end)
-            end
         end
         for _, item in ipairs(model:GetChildren()) do
             if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") then
@@ -1678,11 +1675,11 @@ function Library:TargetIndicator()
     round(hpFill, 2)
     local hpText = new("TextLabel", {Parent = hpBg, Size = UDim2.new(1, -6, 1, 0), Position = UDim2.fromOffset(3, 0), BackgroundTransparency = 1, Text = "100/100", TextColor3 = Library.Theme.Text, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Right})
     local status = new("TextLabel", {Parent = frame, Size = UDim2.fromOffset(132, 16), Position = UDim2.fromOffset(78, 82), BackgroundTransparency = 1, Text = "", TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Library.Font, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, TextStrokeTransparency = 1, Visible = false})
-    local aliases = {Invisible = "Unvisible", NotVisible = "Unvisible", HitScan = "Hitscanned", Hitscan = "Hitscanned", Mogging = "Hitscanned", Resolver = "Resolved", Resolved = "Resolved"}
-    local allowed = {Visible = true, Unvisible = true, Manipulating = true, Manipulated = true, Hitscanned = true, Resolved = true}
+    local aliases = {Invisible = "Unvisible", NotVisible = "Unvisible", Resolver = "Resolved", Resolved = "Resolved"}
+    local allowed = {Visible = true, Unvisible = true, Manipulating = true, Manipulated = true, Resolved = true}
     local function normalizeStatus(name)
         local key = aliases[tostring(name)] or tostring(name or "")
-        if key == "Locked" or key == "" then return nil end
+        if key == "Locked" or key == "Hitscanned" or key == "HitScan" or key == "Hitscan" or key == "Mogging" or key == "" then return nil end
         if allowed[key] then return key end
         return key
     end
@@ -1730,9 +1727,10 @@ function Library:TargetIndicator()
             end
             return
         end
+        local statusColors = {Visible = Color3.fromRGB(80, 255, 120), Unvisible = Color3.fromRGB(255, 80, 80), Manipulating = Color3.fromRGB(255, 220, 70), Manipulated = Color3.fromRGB(170, 110, 255), Resolved = Library.Theme.Accent}
         indicator.CurrentStatus = key
         status.Text = key
-        status.TextColor3 = colorValue(color, Library.Theme.Accent)
+        status.TextColor3 = colorValue(color, statusColors[key] or Library.Theme.Accent)
         status.Visible = true
     end
     function indicator:HideAllStatuses()
