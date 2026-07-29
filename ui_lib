@@ -191,10 +191,6 @@ local function resolveLogo(input)
         return "rbxassetid://" .. input
     end
     if Library.DefaultLogo then return Library.DefaultLogo end
-    for _, path in ipairs({"CatHack/Assets/cathack_logo.png", "RostAlpha/Assets/cathack_logo.png"}) do
-        local asset = custom(path)
-        if asset then Library.DefaultLogo = asset return asset end
-    end
     for _, url in ipairs({"https://bldxaundxyncrwhtjkcg.supabase.co/storage/v1/object/public/cathack/iconBase64.txt", "https://bldxaundxyncrwhtjkcg.supabase.co/storage/v1/object/public/cathack/iconBase64.txt?download=1"}) do
         local body
         pcall(function() body = game:HttpGet(url) end)
@@ -205,6 +201,10 @@ local function resolveLogo(input)
                 if asset then Library.DefaultLogo = asset return asset end
             end
         end
+    end
+    for _, path in ipairs({"CatHack/Assets/cathack_logo.png", "RostAlpha/Assets/cathack_logo.png"}) do
+        local asset = custom(path)
+        if asset then Library.DefaultLogo = asset return asset end
     end
     Library.DefaultLogo = "rbxassetid://81336411204830"
     return Library.DefaultLogo
@@ -739,14 +739,14 @@ function Library:CreateColorpicker(data)
         if not open or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
         task.defer(function() if open and not inBounds(input.Position, popup) and not inBounds(input.Position, swatch) then close() end end)
     end)
-    self.SetFlags[flag] = function(value)
+    self.SetFlags[flag] = function(value, fireCallback)
         if type(value) == "table" then
             if typeof(value.Color) == "Color3" then state.Color = value.Color end
             if value.Transparency ~= nil then state.Transparency = value.Transparency end
             if value.r then state.Color = Color3.new(value.r, value.g, value.b) state.Transparency = value.tr or 0 end
         elseif typeof(value) == "Color3" then state.Color = value end
         hue, sat, val = state.Color:ToHSV()
-        apply(true)
+        apply(fireCallback ~= true)
     end
     apply(true)
     return {Set = self.SetFlags[flag], Get = function() return state end, Instance = swatch}
@@ -791,13 +791,13 @@ function Library:CreateKeybind(data)
             end
         end
     end
-    local function updateFlag()
+    local function updateFlag(fireCallback)
         bind.Value = bind.Key and keyName(bind.Key) or "None"
         button.Text = bind.Value
         bind.active = bind.Toggled
         paintModes()
         Library.Flags[flag] = bind
-        Library:SafeCall(data.Callback, bind.Toggled)
+        if fireCallback == true then Library:SafeCall(data.Callback, bind.Toggled) end
         if Library.KeyListRefresh then Library.KeyListRefresh() end
     end
     local function setMode(mode)
@@ -805,7 +805,7 @@ function Library:CreateKeybind(data)
         bind.Toggled = mode == "Always"
         bind.active = bind.Toggled
         paintModes()
-        updateFlag()
+        updateFlag(false)
     end
     local function closePopup()
         open = false
@@ -836,7 +836,7 @@ function Library:CreateKeybind(data)
     for _, mode in ipairs({"Hold", "Toggle", "Always"}) do
         local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9102}, popupContent)
         new("UIPadding", {PaddingLeft = UDim.new(0, 10)}, option)
-        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(-10, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
+        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(-12, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
         round(line, 2)
         modeButtons[mode] = option
         modeLines[mode] = line
@@ -863,20 +863,20 @@ function Library:CreateKeybind(data)
                 bind.Key = input.UserInputType
             end
             capture = false
-            updateFlag()
+            updateFlag(false)
             return
         end
         if processed then return end
         if not bind.Key then return end
         if input.KeyCode == bind.Key or input.UserInputType == bind.Key then
             if bind.Mode == "Toggle" then bind.Toggled = not bind.Toggled elseif bind.Mode == "Hold" then bind.Toggled = true elseif bind.Mode == "Always" then bind.Toggled = true end
-            updateFlag()
+            updateFlag(true)
         end
     end)
     connect(UIS.InputEnded, function(input)
         if not bind.Key then return end
         if input.KeyCode == bind.Key or input.UserInputType == bind.Key then
-            if bind.Mode == "Hold" then bind.Toggled = false updateFlag() end
+            if bind.Mode == "Hold" then bind.Toggled = false updateFlag(true) end
         end
     end)
     local object = {}
@@ -892,12 +892,12 @@ function Library:CreateKeybind(data)
         else
             bind.Key = keyFromString(value)
         end
-        updateFlag()
+        updateFlag(false)
     end
     function object:SetMode(mode) setMode(mode) end
     self.Keybinds[#self.Keybinds + 1] = {Name = data.Name, Object = object, State = bind, Flag = flag}
     self.SetFlags[flag] = function(value) object:Set(value) end
-    updateFlag()
+    updateFlag(false)
     return object
 end
 
@@ -987,7 +987,7 @@ function SectionMethods:Slider(data, minArg, maxArg, defaultArg, suffixArg, call
     connect(UIS.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false effect(false) end
     end)
-    Library.SetFlags[flag] = function(v) apply(v, true, true) end
+    Library.SetFlags[flag] = function(v, fireCallback) apply(v, fireCallback ~= true, true) end
     apply(value, true, true)
     return {Set = function(_, v) apply(v, true, true) end, Get = function() return value end, Instance = holder}
 end
@@ -1108,14 +1108,14 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
             if open and not inBounds(input.Position, list) and not inBounds(input.Position, box) then close() end
         end)
     end)
-    Library.SetFlags[flag] = function(value)
+    Library.SetFlags[flag] = function(value, fireCallback)
         if multi and type(value) == "table" then
             currentSet = {}
             for _, item in ipairs(value) do currentSet[item] = true end
         else
             current = value
         end
-        updateValue(true)
+        updateValue(fireCallback ~= true)
     end
     rebuild()
     updateValue(true)
@@ -1160,9 +1160,10 @@ function SectionMethods:Textbox(data)
         Library.Flags[flag] = box.Text
         Library:SafeCall(data.Callback, box.Text)
     end)
-    Library.SetFlags[flag] = function(value)
+    Library.SetFlags[flag] = function(value, fireCallback)
         box.Text = tostring(value or "")
         Library.Flags[flag] = box.Text
+        if fireCallback == true then Library:SafeCall(data.Callback, box.Text) end
     end
     return {Set = Library.SetFlags[flag], Get = function() return box.Text end, Instance = holder}
 end
@@ -2009,7 +2010,7 @@ function Library:LoadConfigFromFile(name)
     for key, value in pairs(decoded or {}) do
         local restored = deserializeValue(value)
         if self.SetFlags[key] then
-            pcall(function() self.SetFlags[key](restored) end)
+            pcall(function() self.SetFlags[key](restored, true) end)
         else
             self.Flags[key] = restored
         end
