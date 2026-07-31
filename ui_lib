@@ -989,7 +989,31 @@ function SectionMethods:Slider(data, minArg, maxArg, defaultArg, suffixArg, call
     end)
     Library.SetFlags[flag] = function(v, fireCallback) apply(v, fireCallback ~= true, true) end
     apply(value, true, true)
-    return {Set = function(_, v) apply(v, true, true) end, Get = function() return value end, Instance = holder}
+    local slider_obj = {Instance = holder}
+    function slider_obj:Set(v) apply(v, true, true) end
+    function slider_obj:Get() return value end
+    function slider_obj:SetMax(nm)
+        local nn = tonumber(nm)
+        if not nn then return end
+        max = nn
+        if min > max then min = max end
+        if value > max then apply(max, true, true) else apply(value, true, true) end
+    end
+    function slider_obj:SetMin(nm)
+        local nn = tonumber(nm)
+        if not nn then return end
+        min = nn
+        if max < min then max = min end
+        if value < min then apply(min, true, true) else apply(value, true, true) end
+    end
+    function slider_obj:SetRange(nmin, nmax)
+        local nn1, nn2 = tonumber(nmin), tonumber(nmax)
+        if nn1 then min = nn1 end
+        if nn2 then max = nn2 end
+        if min > max then min = max end
+        apply(math.clamp(value, min, max), true, true)
+    end
+    return slider_obj
 end
 
 function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
