@@ -1870,17 +1870,18 @@ function Library:Notification(message, duration, color)
     return self:Notify(message, duration, color)
 end
 
-function Library:ReloadBar(duration)
+function Library:ReloadBar(duration, color)
     duration = tonumber(duration) or 2
+    local fill_color = typeof(color) == "Color3" and color or Color3.fromRGB(60, 200, 90)
     local parent = getParent()
     if not parent then return end
     local existing = parent:FindFirstChild("CatHackReloadBar")
     if existing then existing:Destroy() end
     local gui = new("ScreenGui", {Name = "CatHackReloadBar", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 999998})
-    local bg = new("Frame", {Parent = gui, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.62, 0), Size = UDim2.fromOffset(160, 4), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BorderSizePixel = 0})
-    local fill = new("Frame", {Parent = bg, Position = UDim2.fromOffset(1, 1), Size = UDim2.new(0, 0, 1, -2), BackgroundColor3 = Color3.fromRGB(60, 200, 90), BorderSizePixel = 0})
+    local bg = new("Frame", {Parent = gui, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.62, 0), Size = UDim2.fromOffset(200, 5), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BorderSizePixel = 0})
+    local fill = new("Frame", {Parent = bg, Position = UDim2.fromOffset(1, 1), Size = UDim2.new(0, 0, 1, -2), BackgroundColor3 = fill_color, BorderSizePixel = 0})
     gui.Parent = parent
-    local bar = {gui = gui, fill = fill, start_t = tick(), duration = duration, finished = false}
+    local bar = {gui = gui, fill = fill, bg = bg, start_t = tick(), duration = duration, finished = false, base_color = fill_color}
     task.spawn(function()
         while not bar.finished and tick() - bar.start_t < bar.duration do
             if not gui.Parent then return end
@@ -1888,17 +1889,36 @@ function Library:ReloadBar(duration)
             fill.Size = UDim2.new(p, -2, 1, -2)
             task.wait()
         end
-        if gui.Parent then
-            fill.Size = UDim2.new(1, -2, 1, -2)
-            task.wait(0.15)
-            gui:Destroy()
+        if not gui.Parent then return end
+        fill.Size = UDim2.new(1, -2, 1, -2)
+        local flash_t = tick()
+        while tick() - flash_t < 0.25 do
+            if not gui.Parent then return end
+            local p = (tick() - flash_t) / 0.25
+            fill.BackgroundColor3 = bar.base_color:Lerp(Color3.fromRGB(255, 255, 255), p)
+            task.wait()
         end
+        local fade_t = tick()
+        while tick() - fade_t < 0.35 do
+            if not gui.Parent then return end
+            local p = (tick() - fade_t) / 0.35
+            fill.BackgroundTransparency = p
+            bg.BackgroundTransparency = p
+            task.wait()
+        end
+        if gui.Parent then gui:Destroy() end
     end)
     function bar:Finish()
         self.finished = true
     end
     function bar:SetDuration(new_dur)
         self.duration = tonumber(new_dur) or self.duration
+    end
+    function bar:SetColor(c)
+        if typeof(c) == "Color3" then
+            self.base_color = c
+            if self.fill then self.fill.BackgroundColor3 = c end
+        end
     end
     return bar
 end
