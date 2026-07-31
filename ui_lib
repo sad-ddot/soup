@@ -622,7 +622,7 @@ function SectionMethods:Toggle(data)
     end
     function control:Keybind(bindData)
         bindData = bindData or {}
-        return Library:CreateKeybind({Window = sectionWindow, Section = sectionObject, Parent = control.Instance, Name = bindData.Name or data.Name or flag, Flag = bindData.Flag or bindData.Name or flag .. "Key", Default = bindData.Default or Enum.KeyCode.None, Mode = bindData.Mode or "Toggle", Callback = bindData.Callback})
+        return Library:CreateKeybind({Window = sectionWindow, Section = sectionObject, Parent = control.Instance, ParentFlag = flag, Name = bindData.Name or data.Name or flag, Flag = bindData.Flag or bindData.Name or flag .. "Key", Default = bindData.Default or Enum.KeyCode.None, Mode = bindData.Mode or "Toggle", Callback = bindData.Callback})
     end
     return control
 end
@@ -895,7 +895,7 @@ function Library:CreateKeybind(data)
         updateFlag(false)
     end
     function object:SetMode(mode) setMode(mode) end
-    self.Keybinds[#self.Keybinds + 1] = {Name = data.Name, Object = object, State = bind, Flag = flag}
+    self.Keybinds[#self.Keybinds + 1] = {Name = data.Name, Object = object, State = bind, Flag = flag, ParentFlag = data.ParentFlag}
     self.SetFlags[flag] = function(value) object:Set(value) end
     updateFlag(false)
     return object
@@ -1311,7 +1311,7 @@ function WindowMethods:KeybindList()
         end
         local count = 0
         for _, entry in ipairs(Library.Keybinds) do
-            if entry.State and entry.State.Toggled and entry.State.Key then
+            if entry.State and entry.State.Toggled and entry.State.Key and (not entry.ParentFlag or Library.Flags[entry.ParentFlag] == true) then
                 count += 1
                 addRow(tostring(entry.State.Mode or "Toggle"), tostring(entry.Name or entry.Flag or "Bind"), keyName(entry.State.Key), count)
             end
@@ -1868,6 +1868,35 @@ end
 
 function Library:Notification(message, duration, color)
     return self:Notify(message, duration, color)
+end
+
+function Library:ReloadBar(duration)
+    duration = tonumber(duration) or 2
+    local parent = getParent()
+    if not parent then return end
+    local existing = parent:FindFirstChild("CatHackReloadBar")
+    if existing then existing:Destroy() end
+    local gui = new("ScreenGui", {Name = "CatHackReloadBar", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 999998})
+    local bg = new("Frame", {Parent = gui, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.62, 0), Size = UDim2.fromOffset(180, 6), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BorderSizePixel = 0})
+    round(bg, 2)
+    local fill = new("Frame", {Parent = bg, Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(60, 200, 90), BorderSizePixel = 0})
+    round(fill, 2)
+    gui.Parent = parent
+    task.spawn(function()
+        local start_t = tick()
+        while tick() - start_t < duration do
+            if not gui.Parent then return end
+            local p = math.clamp((tick() - start_t) / duration, 0, 1)
+            fill.Size = UDim2.new(p, 0, 1, 0)
+            task.wait()
+        end
+        if gui.Parent then
+            fill.Size = UDim2.new(1, 0, 1, 0)
+            task.wait(0.15)
+            gui:Destroy()
+        end
+    end)
+    return gui
 end
 
 function Library:KeybindList(data)
