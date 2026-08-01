@@ -94,6 +94,34 @@ local function text(value)
     return tostring(value or "")
 end
 
+local function repositionRightWidgets(parent)
+    if not parent then return end
+    local rightEdge = -6
+    local gap = 4
+    local swatches = {}
+    local keybinds = {}
+    for _, child in ipairs(parent:GetChildren()) do
+        if child.Name == "__swatch" then swatches[#swatches + 1] = child
+        elseif child.Name == "__keybind" then keybinds[#keybinds + 1] = child end
+    end
+    local cursor = rightEdge
+    for i, sw in ipairs(swatches) do
+        local w = sw.AbsoluteSize.X > 0 and sw.AbsoluteSize.X or sw.Size.X.Offset
+        if w <= 0 then w = 20 end
+        sw.Position = UDim2.new(1, cursor - w, sw.Position.Y.Scale, sw.Position.Y.Offset)
+        cursor = cursor - w - (i < #swatches and gap or 0)
+    end
+    if #keybinds > 0 then
+        if #swatches > 0 then cursor = cursor - gap end
+        for _, kb in ipairs(keybinds) do
+            local w = kb.AbsoluteSize.X > 0 and kb.AbsoluteSize.X or kb.Size.X.Offset
+            if w <= 0 then w = 58 end
+            kb.Position = UDim2.new(1, cursor - w, kb.Position.Y.Scale, kb.Position.Y.Offset)
+            cursor = cursor - w - gap
+        end
+    end
+end
+
 local function keyName(key)
     local s = tostring(key or "None")
     return s:match("KeyCode%.(.+)$") or s:match("UserInputType%.(.+)$") or s
@@ -583,7 +611,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
     local gradient = new("UIGradient", {Rotation = 90, Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
     local scale = new("UIScale", {Scale = 1}, box)
     local glowLayers = {}
-    local glowSizes = {6, 4, 2}
+    local glowSizes = {9, 6, 3}
     local glowCorners = {1, 1, 0.55}
     for i = 1, 3 do
         local pad = glowSizes[i]
@@ -593,7 +621,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
     end
     local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8}, row)
     local control = {Instance = row}
-    local glowAlphas = {0.88, 0.75, 0.55}
+    local glowAlphas = {0.92, 0.78, 0.5}
     local function apply(newValue, silent)
         value = newValue == true
         Library.Flags[flag] = value
@@ -650,12 +678,8 @@ function Library:CreateColorpicker(data)
     local flag = data.Flag
     local hue, sat, val = state.Color:ToHSV()
     self.Flags[flag] = state
-    local swatchCount = 0
-    for _, child in ipairs(data.Parent:GetChildren()) do
-        if child.Name == "__swatch" then swatchCount += 1 end
-    end
-    swatchCount = math.clamp(swatchCount, 0, 2)
-    local swatch = new("ImageButton", {Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, -26 - swatchCount * 26, 0.5, -10), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://14008802626", ImageColor3 = state.Color, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
+    local swatch = new("ImageButton", {Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, -26, 0.5, -10), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://14008802626", ImageColor3 = state.Color, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
+    repositionRightWidgets(data.Parent)
     local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
     popup:SetAttribute("NoTheme", true)
     round(popup, 8)
@@ -772,12 +796,8 @@ function Library:CreateKeybind(data)
     local defaultKey = keyFromString(data.Default) or nil
     local bind = {Mode = data.Mode or "Toggle", Key = defaultKey, Toggled = false, active = false, Value = defaultKey and keyName(defaultKey) or "None"}
     self.Flags[flag] = bind
-    local swatchCount = 0
-    for _, child in ipairs(data.Parent:GetChildren()) do
-        if child.Name == "__swatch" then swatchCount += 1 end
-    end
-    swatchCount = math.clamp(swatchCount, 0, 3)
-    local shell = new("Frame", {Size = UDim2.fromOffset(58, 16), Position = UDim2.new(1, -64 - swatchCount * 26, 0.5, -8), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5}, data.Parent)
+    local shell = new("Frame", {Size = UDim2.fromOffset(58, 16), Position = UDim2.new(1, -64, 0.5, -8), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5, Name = "__keybind"}, data.Parent)
+    repositionRightWidgets(data.Parent)
     local shellBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, ZIndex = 5}, shell)
     round(shellBg, 4)
     stroke(shellBg, Library.Theme.Stroke, 0.35)
@@ -1302,15 +1322,14 @@ function WindowMethods:Watermark(defaultText)
 end
 
 function WindowMethods:KeybindList()
-    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(158, 28), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
-    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 26), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, ZIndex = 10000}, frame)
-    round(header, 6)
-    stroke(header, Library.Theme.Stroke, 0.2)
-    new("ImageLabel", {Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(8, 6), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10001}, header)
+    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(158, 28), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
+    round(frame, 6)
+    stroke(frame, Library.Theme.Stroke, 0.2)
+    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 10000}, frame)
+    new("ImageLabel", {Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(8, 5), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10001}, header)
     local titleLabel = new("TextLabel", {Size = UDim2.new(1, -32, 1, 0), Position = UDim2.fromOffset(26, 0), BackgroundTransparency = 1, Text = "Keybind list", TextColor3 = Color3.new(1, 1, 1), TextSize = 12, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10001}, header)
-    local bindsBg = new("Frame", {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Library.Theme.Panel, BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 9999}, frame)
-    round(bindsBg, 6)
-    stroke(bindsBg, Library.Theme.Stroke, 0.55)
+    local separator = new("Frame", {Size = UDim2.new(1, -12, 0, 1), Position = UDim2.fromOffset(6, 24), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 10000}, frame)
+    local bindsBg = new("Frame", {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.fromOffset(0, 25), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Color3.fromRGB(12, 12, 12), BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 9999}, frame)
     local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, 4), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 10000}, bindsBg)
     local layout = new("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
     new("UIPadding", {PaddingBottom = UDim.new(0, 4)}, bindsBg)
@@ -1370,13 +1389,13 @@ function WindowMethods:KeybindList()
             empty.LayoutOrder = 1
         end
         local rows = math.max(count, 1)
-        local height = 28 + rows * 16 + 10
+        local height = 25 + rows * 16 + 10
         frame.Size = UDim2.fromOffset(158, height)
         if object.Visible then show() else hide() end
     end
     connect(layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
         local h = layout.AbsoluteContentSize.Y
-        frame.Size = UDim2.fromOffset(158, 28 + h + 10)
+        frame.Size = UDim2.fromOffset(158, 25 + h + 10)
     end)
     function object:SetVisibility(value) object.Visible = value == true; refresh() end
     function object:Add() refresh() end
