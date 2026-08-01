@@ -90,6 +90,37 @@ local function tween(object, props, time, style, direction)
     return tw
 end
 
+local function softOuterGlow(target, color, layers, thickCore, alphaCore)
+    color = color or Library.Theme.Stroke
+    layers = layers or 6
+    thickCore = thickCore or 1
+    alphaCore = alphaCore or 0.35
+    local strokes = {}
+    for i = 1, layers do
+        local t = (i - 1) / math.max(layers - 1, 1)
+        local thickness = thickCore + t * (layers * 1.4)
+        local trans = alphaCore + (1 - alphaCore) * t
+        local s = new("UIStroke", {Color = color, Thickness = thickness, Transparency = trans, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, target)
+        strokes[i] = s
+    end
+    return strokes
+end
+
+local function softRingGlow(box, color, layers, extraExpand)
+    color = color or Library.Theme.Accent
+    layers = layers or 8
+    extraExpand = extraExpand or 14
+    local ring = {}
+    for i = 1, layers do
+        local t = (i - 1) / math.max(layers - 1, 1)
+        local pad = t * extraExpand
+        local frame = new("Frame", {Size = UDim2.new(1, pad * 2, 1, pad * 2), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = color, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = (box.ZIndex or 1) - 1 - i}, box)
+        new("UICorner", {CornerRadius = UDim.new(1, 0)}, frame)
+        ring[i] = frame
+    end
+    return ring
+end
+
 local function text(value)
     return tostring(value or "")
 end
@@ -280,7 +311,14 @@ function Library:Window(data)
     local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1, Visible = false}, gui)
     local mainScale = new("UIScale", {Scale = 0.985}, main)
     round(main, 4)
-    local mainStroke = stroke(main, Library.Theme.Stroke, 1, 1)
+    local mainStrokes = softOuterGlow(main, Library.Theme.Stroke, 5, 1, 0.3)
+    for _, s in ipairs(mainStrokes) do s.Transparency = 1 end
+    local mainStroke = mainStrokes[1]
+    local mainStrokeTargets = {}
+    for i = 1, #mainStrokes do
+        local t = (i - 1) / math.max(#mainStrokes - 1, 1)
+        mainStrokeTargets[i] = 0.3 + (1 - 0.3) * t
+    end
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Library.Theme.Bg, BackgroundTransparency = 0, BorderSizePixel = 0}, main)
     local logo = new("Frame", {Size = UDim2.fromOffset(36, 36), Position = UDim2.fromOffset(10, 1), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0, BorderSizePixel = 0}, header)
     round(logo, 7)
@@ -315,7 +353,9 @@ function Library:Window(data)
         main.Visible = true
         tween(main, {GroupTransparency = 0}, 0.22)
         tween(mainScale, {Scale = 1}, 0.22, Enum.EasingStyle.Back)
-        tween(mainStroke, {Transparency = 0.15}, 0.28)
+        for i, s in ipairs(mainStrokes) do
+            tween(s, {Transparency = mainStrokeTargets[i]}, 0.28)
+        end
         for _, w in ipairs(window.IntroWidgets) do
             if w.Object and w.Object.Parent then
                 if w.KL then w.KL.IntroPending = false end
@@ -610,12 +650,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
     local boxStroke = stroke(box, value and Library.Theme.Accent or Library.Theme.Stroke, 0.08)
     local gradient = new("UIGradient", {Rotation = 90, Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
     local scale = new("UIScale", {Scale = 1}, box)
-    local glowHolder = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = box.ZIndex - 1}, box)
-    round(glowHolder, 3)
-    local glowStrokes = {}
-    for i = 1, 3 do
-        glowStrokes[i] = new("UIStroke", {Color = Library.Theme.Accent, Thickness = i * 2, Transparency = 1}, glowHolder)
-    end
+    local glowLayers = softRingGlow(box, Library.Theme.Accent, 10, 16)
     local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8}, row)
     local control = {Instance = row}
     local function apply(newValue, silent)
@@ -625,7 +660,12 @@ function SectionMethods:Checkbox(name, default, callback, style)
         gradient.Color = value and ColorSequence.new(accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
         boxStroke.Color = value and accent or Library.Theme.Stroke
         tween(label, {TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim)}, 0.14)
-        for i, gs in ipairs(glowStrokes) do gs.Color = accent tween(gs, {Transparency = value and (0.55 + i * 0.12) or 1}, 0.16) end
+        for i, layer in ipairs(glowLayers) do
+            local t = (i - 1) / math.max(#glowLayers - 1, 1)
+            local baseAlpha = 0.35 + t * 0.62
+            layer.BackgroundColor3 = accent
+            tween(layer, {BackgroundTransparency = value and baseAlpha or 1}, 0.18)
+        end
         if value then scale.Scale = 0.82 tween(scale, {Scale = 1}, 0.2) end
         if not silent then Library:SafeCall(callback, value) end
     end
@@ -1280,7 +1320,7 @@ function WindowMethods:Watermark(defaultText)
     local function mkWin(defText, order, isTitle, iconAsset)
         local frame = new("Frame", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, LayoutOrder = order, ZIndex = 9701, ClipsDescendants = true}, wm)
         round(frame, 6)
-        new("UIStroke", {Color = Library.Theme.Stroke, Thickness = 1, Transparency = 0.5}, frame)
+        softOuterGlow(frame, Library.Theme.Stroke, 4, 1, 0.35)
         new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, isTitle and 4 or 6), SortOrder = Enum.SortOrder.LayoutOrder}, frame)
         new("UIPadding", {PaddingLeft = UDim.new(0, isTitle and 6 or 10), PaddingRight = UDim.new(0, isTitle and 8 or 10)}, frame)
         if iconAsset then
@@ -1356,19 +1396,16 @@ function WindowMethods:KeybindList()
     local width = 178
     local headerH = 26
     local rowH = 18
-    local overlap = 6
-    local bindsPadTop, bindsPadBot = overlap + 2, 6
-    local initialY = headerH - 6 + 8 + 8 + 6
-    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(width, initialY), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
-    local bindsBg = new("CanvasGroup", {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.fromOffset(0, headerH - overlap), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Color3.fromRGB(6, 6, 8), BackgroundTransparency = 0.4, BorderSizePixel = 0, GroupTransparency = 1, Visible = true, ZIndex = 9998, ClipsDescendants = true}, frame)
-    round(bindsBg, 5)
-    stroke(bindsBg, Library.Theme.Stroke, 0.4)
+    local bindsPadTop, bindsPadBot = 4, 6
+    local initialY = headerH + bindsPadTop + 8 + bindsPadBot
+    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(width, initialY), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999, ClipsDescendants = true}, self.Gui)
+    round(frame, 6)
+    softOuterGlow(frame, Library.Theme.Stroke, 5, 1, 0.32)
+    local bindsBg = new("Frame", {Size = UDim2.new(1, 0, 1, -headerH), Position = UDim2.fromOffset(0, headerH), BackgroundColor3 = Color3.fromRGB(6, 6, 8), BackgroundTransparency = 0.45, BorderSizePixel = 0, ZIndex = 9998, ClipsDescendants = true}, frame)
     local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, bindsPadTop), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 10000}, bindsBg)
     local layout = new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
-    new("UIPadding", {PaddingBottom = UDim.new(0, bindsPadBot)}, bindsBg)
-    local header = new("Frame", {Size = UDim2.new(1, 0, 0, headerH), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, ZIndex = 10010}, frame)
-    round(header, 5)
-    stroke(header, Library.Theme.Stroke, 0.25)
+    local header = new("Frame", {Size = UDim2.new(1, 0, 0, headerH), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 10010}, frame)
+    local separator = new("Frame", {Size = UDim2.new(1, -12, 0, 1), Position = UDim2.fromOffset(6, headerH - 1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.55, BorderSizePixel = 0, ZIndex = 10011}, frame)
     local icon = new("ImageLabel", {Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(9, 6), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10011}, header)
     local titleLabel = new("TextLabel", {Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(26, 0), BackgroundTransparency = 1, Text = "Keybind List (0)", TextColor3 = Color3.new(1, 1, 1), TextSize = 12, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10011}, header)
     local object = {Visible = true, Shown = false, IntroPending = true}
@@ -1446,7 +1483,6 @@ function WindowMethods:KeybindList()
             end
         end
         titleLabel.Text = "Keybind List (" .. count .. ")"
-        tween(bindsBg, {GroupTransparency = 0}, 0.22, Enum.EasingStyle.Quint)
         for k, row in pairs(rowRegistry) do
             if not active[k] then
                 removeRow(row)
@@ -1478,7 +1514,7 @@ function WindowMethods:KeybindList()
         local h = layout.AbsoluteContentSize.Y
         local minEmptyH = 8
         local contentH = math.max(h, minEmptyH)
-        local targetY = headerH - overlap + bindsPadTop + contentH + bindsPadBot
+        local targetY = headerH + bindsPadTop + contentH + bindsPadBot
         tween(frame, {Size = UDim2.fromOffset(width, targetY)}, 0.22, Enum.EasingStyle.Quint)
     end)
     function object:SetVisibility(value) object.Visible = value == true; refresh() end
