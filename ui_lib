@@ -135,7 +135,7 @@ local function softRingGlow(box, color, layers, extraExpand)
             LineJoinMode = Enum.LineJoinMode.Round,
         }, glowHost)
         ring[i] = s
-        softRingTargets[s] = 0.65 + t * 0.35
+        softRingTargets[s] = 0.78 + t * 0.22
     end
     return ring
 end
@@ -677,7 +677,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Image = "rbxassetid://71963744176364",
-        ImageColor3 = Library.Theme.Bg,
+        ImageColor3 = Color3.new(1, 1, 1),
         ImageTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 10,
