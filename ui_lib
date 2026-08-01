@@ -110,14 +110,29 @@ local function softRingGlow(box, color, layers, extraExpand)
     color = color or Library.Theme.Accent
     layers = layers or 8
     extraExpand = extraExpand or 14
+    local parent = box.Parent
+    local anchor = new("Frame", {Size = UDim2.fromOffset(0, 0), Position = UDim2.new(box.Position.X.Scale, box.Position.X.Offset, box.Position.Y.Scale, box.Position.Y.Offset), AnchorPoint = box.AnchorPoint, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = (box.ZIndex or 1) - 1}, parent)
     local ring = {}
+    local pads = {}
     for i = 1, layers do
         local t = (i - 1) / math.max(layers - 1, 1)
-        local pad = t * extraExpand
-        local frame = new("Frame", {Size = UDim2.new(1, pad * 2, 1, pad * 2), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = color, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = (box.ZIndex or 1) - 1 - i}, box)
+        local pad = math.floor(t * extraExpand + 0.5)
+        pads[i] = pad
+        local frame = new("Frame", {Size = UDim2.fromOffset(0, 0), Position = UDim2.fromOffset(-pad, -pad), BackgroundColor3 = color, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = (box.ZIndex or 1) - 1 - i}, anchor)
         new("UICorner", {CornerRadius = UDim.new(1, 0)}, frame)
         ring[i] = frame
     end
+    local function sync()
+        local sz = box.AbsoluteSize
+        if sz.X <= 0 then return end
+        for i, f in ipairs(ring) do
+            local p = pads[i]
+            f.Size = UDim2.fromOffset(sz.X + p * 2, sz.Y + p * 2)
+        end
+    end
+    connect(box:GetPropertyChangedSignal("AbsoluteSize"), sync)
+    task.defer(sync)
+    task.delay(0.1, sync)
     return ring
 end
 
@@ -662,7 +677,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
         tween(label, {TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim)}, 0.14)
         for i, layer in ipairs(glowLayers) do
             local t = (i - 1) / math.max(#glowLayers - 1, 1)
-            local baseAlpha = 0.25 + t * 0.7
+            local baseAlpha = 0.35 + t * 0.6
             layer.BackgroundColor3 = accent
             tween(layer, {BackgroundTransparency = value and baseAlpha or 1}, 0.18)
         end
