@@ -249,10 +249,10 @@ function Library:Window(data)
     local parent = getParent()
     local gui = new("ScreenGui", {Name = title .. "_" .. tostring(math.random(10000, 99999)), IgnoreGuiInset = true, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parent)
     local popupLayer = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 9000}, gui)
-    local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1}, gui)
+    local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1, Visible = false}, gui)
     local mainScale = new("UIScale", {Scale = 0.985}, main)
     round(main, 4)
-    local mainStroke = stroke(main, Color3.fromRGB(100, 104, 118), 0, 3)
+    local mainStroke = stroke(main, Color3.fromRGB(100, 104, 118), 1, 3)
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Library.Theme.Bg, BackgroundTransparency = 0, BorderSizePixel = 0}, main)
     local logo = new("Frame", {Size = UDim2.fromOffset(36, 36), Position = UDim2.fromOffset(10, 1), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0, BorderSizePixel = 0}, header)
     round(logo, 7)
@@ -281,10 +281,22 @@ function Library:Window(data)
     local pageRoot = new("Frame", {Size = UDim2.new(1, -20, 1, -52), Position = UDim2.fromOffset(10, 44), BackgroundTransparency = 1, ClipsDescendants = true}, main)
     local notifyHolder = new("Frame", {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -14, 1, -14), Size = UDim2.fromOffset(260, 360), BackgroundTransparency = 1, ZIndex = 9500}, gui)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Bottom}, notifyHolder)
-    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage}, WindowMethods)
+    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, MainStroke = mainStroke, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage, IntroWidgets = {}}, WindowMethods)
     self.Windows[#self.Windows + 1] = window
-    tween(main, {GroupTransparency = 0}, 0.22)
-    tween(mainScale, {Scale = 1}, 0.22, Enum.EasingStyle.Back)
+    task.defer(function()
+        main.Visible = true
+        tween(main, {GroupTransparency = 0}, 0.22)
+        tween(mainScale, {Scale = 1}, 0.22, Enum.EasingStyle.Back)
+        tween(mainStroke, {Transparency = 0}, 0.22)
+        for _, w in ipairs(window.IntroWidgets) do
+            if w.Object and w.Object.Parent then
+                if w.KL then w.KL.IntroPending = false end
+                w.Object.Visible = true
+                w.Object.GroupTransparency = 1
+                tween(w.Object, {GroupTransparency = 0}, 0.22)
+            end
+        end
+    end)
     local drag, dragStart, startPos
     connect(header.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -565,30 +577,36 @@ function SectionMethods:Checkbox(name, default, callback, style)
     local risky = style.Risky == true or style.Unstable == true or style.Risk == true
     local riskyColor = style.Color or Library.Theme.RiskyText or Color3.fromRGB(255, 220, 70)
     local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Text = "", AutoButtonColor = false}, self.Body)
-    local box = new("Frame", {Size = UDim2.fromOffset(13, 13), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, row)
+    local glowHolder = new("Frame", {Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -10, 0.5, -17), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 3}, row)
+    local glowLayers = {}
+    for i = 1, 4 do
+        local layer = new("Frame", {Size = UDim2.new(1, -i * 3, 1, -i * 3), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 3 + i}, glowHolder)
+        new("UICorner", {CornerRadius = UDim.new(1, 0)}, layer)
+        glowLayers[i] = layer
+    end
+    local box = new("Frame", {Size = UDim2.fromOffset(13, 13), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 8}, row)
     round(box, 2)
     local boxStroke = stroke(box, value and Library.Theme.Accent or Library.Theme.Stroke, 0.08)
     local gradient = new("UIGradient", {Rotation = 90, Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
     local scale = new("UIScale", {Scale = 1}, box)
-    local glow = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = box.ZIndex - 1}, box)
-    round(glow, 3)
-    local glowStrokes = {}
-    for i = 1, 3 do
-        glowStrokes[i] = new("UIStroke", {Color = Library.Theme.Accent, Thickness = i * 2, Transparency = 1}, glow)
-    end
-    local bloom = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = box.ZIndex + 1}, box)
-    round(bloom, 3)
-    local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left}, row)
+    local bloom = new("Frame", {Size = UDim2.new(1, 6, 1, 6), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 7}, box)
+    round(bloom, 5)
+    local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8}, row)
     local control = {Instance = row}
+    local glowAlphas = {0.55, 0.72, 0.85, 0.93}
     local function apply(newValue, silent)
         value = newValue == true
         Library.Flags[flag] = value
-        gradient.Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
-        boxStroke.Color = value and Library.Theme.Accent or Library.Theme.Stroke
-        bloom.BackgroundColor3 = Library.Theme.Accent
+        local accent = Library.Theme.Accent
+        gradient.Color = value and ColorSequence.new(accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
+        boxStroke.Color = value and accent or Library.Theme.Stroke
+        bloom.BackgroundColor3 = accent
         tween(label, {TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim)}, 0.14)
-        for i, gs in ipairs(glowStrokes) do gs.Color = Library.Theme.Accent tween(gs, {Transparency = value and (0.6 + i * 0.1) or 1}, 0.14) end
-        tween(bloom, {BackgroundTransparency = value and 0.9 or 1}, 0.14)
+        for i, layer in ipairs(glowLayers) do
+            layer.BackgroundColor3 = accent
+            tween(layer, {BackgroundTransparency = value and glowAlphas[i] or 1}, 0.16)
+        end
+        tween(bloom, {BackgroundTransparency = value and 0.78 or 1}, 0.16)
         if value then scale.Scale = 0.82 tween(scale, {Scale = 1}, 0.2) end
         if not silent then Library:SafeCall(callback, value) end
     end
@@ -602,6 +620,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
     function control:Set(newValue, silent) apply(newValue, silent == true) end
     function control:Get() return value end
     Library.Flags[flag] = value
+    apply(value, true)
     return control
 end
 
@@ -638,9 +657,7 @@ function Library:CreateColorpicker(data)
         if child.Name == "__swatch" then swatchCount += 1 end
     end
     swatchCount = math.clamp(swatchCount, 0, 2)
-    local swatch = new("TextButton", {Size = UDim2.fromOffset(30, 14), Position = UDim2.new(1, -34 - swatchCount * 34, 0.5, -7), BackgroundColor3 = state.Color, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
-    round(swatch, 4)
-    stroke(swatch, Library.Theme.Stroke, 0.05)
+    local swatch = new("ImageButton", {Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, -26 - swatchCount * 26, 0.5, -10), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://14008802626", ImageColor3 = state.Color, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
     local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
     popup:SetAttribute("NoTheme", true)
     round(popup, 8)
@@ -673,7 +690,7 @@ function Library:CreateColorpicker(data)
     local open = false
     local function apply(silent)
         state.Color = Color3.fromHSV(hue, sat, val)
-        swatch.BackgroundColor3 = state.Color
+        swatch.ImageColor3 = state.Color
         palette.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
         alphaBar.BackgroundColor3 = state.Color
         hexLabel.Text = "#" .. state.Color:ToHex():upper()
@@ -762,12 +779,13 @@ function Library:CreateKeybind(data)
         if child.Name == "__swatch" then swatchCount += 1 end
     end
     swatchCount = math.clamp(swatchCount, 0, 3)
-    local shell = new("Frame", {Size = UDim2.fromOffset(44, 14), Position = UDim2.new(1, -50 - swatchCount * 34, 0.5, -7), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5}, data.Parent)
-    local shellBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 5}, shell)
-    round(shellBg, 2)
-    stroke(shellBg, Library.Theme.Stroke, 0.1)
-    new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(26, 28, 33))}, shellBg)
-    local button = new("TextButton", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = bind.Value, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 9, AutoButtonColor = false, ZIndex = 6}, shell)
+    local shell = new("Frame", {Size = UDim2.fromOffset(60, 16), Position = UDim2.new(1, -66 - swatchCount * 26, 0.5, -8), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5}, data.Parent)
+    local shellBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, ZIndex = 5}, shell)
+    round(shellBg, 5)
+    stroke(shellBg, Library.Theme.Stroke, 0.25)
+    new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Library.Theme.Panel, Color3.new(Library.Theme.Panel.R * 0.75, Library.Theme.Panel.G * 0.75, Library.Theme.Panel.B * 0.75))}, shellBg)
+    local kbIcon = new("ImageLabel", {Size = UDim2.fromOffset(12, 12), Position = UDim2.new(0, 4, 0.5, -6), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 6}, shell)
+    local button = new("TextButton", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(18, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = bind.Value, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 10, AutoButtonColor = false, ZIndex = 6, TextXAlignment = Enum.TextXAlignment.Center}, shell)
     local popup = new("CanvasGroup", {Size = UDim2.fromOffset(88, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9100, ClipsDescendants = true}, data.Window.PopupLayer)
     local popupBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9100}, popup)
     round(popupBg, 5)
@@ -1208,7 +1226,8 @@ end
 
 function WindowMethods:Watermark(defaultText)
     if type(defaultText) == "table" then defaultText = defaultText.Name or defaultText.Text or defaultText.Title end
-    local wm = new("CanvasGroup", {Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(0, 30), AnchorPoint = Vector2.new(0.5, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, BorderSizePixel = 0, GroupTransparency = 0, Visible = true, ZIndex = 9700}, self.Gui)
+    local wm = new("CanvasGroup", {Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(0, 30), AnchorPoint = Vector2.new(0.5, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, BorderSizePixel = 0, GroupTransparency = 1, Visible = false, ZIndex = 9700}, self.Gui)
+    table.insert(self.IntroWidgets, {Object = wm, Kind = "Watermark"})
     new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, wm)
     local function mkWin(defText, order, isTitle, iconAsset)
         local frame = new("Frame", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, LayoutOrder = order, ZIndex = 9701, ClipsDescendants = true}, wm)
@@ -1286,17 +1305,24 @@ function WindowMethods:Watermark(defaultText)
 end
 
 function WindowMethods:KeybindList()
-    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(140, 28), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
+    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(178, 34), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
     round(frame, 8)
-    stroke(frame, Library.Theme.Stroke, 0.15)
-    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, ZIndex = 10000}, frame)
-    local accent = new("Frame", {Size = UDim2.fromOffset(2, 12), Position = UDim2.new(0, 8, 0.5, -6), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, ZIndex = 10001}, header)
-    round(accent, 2)
-    new("TextLabel", {Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(36, 0), BackgroundTransparency = 1, Text = "keybind list", TextColor3 = Library.Theme.Text, TextSize = 11, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10001}, header)
-    new("Frame", {Size = UDim2.new(1, -16, 0, 1), Position = UDim2.fromOffset(8, 24), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 10000}, frame)
-    local holder = new("Frame", {Size = UDim2.new(1, -16, 0, 0), Position = UDim2.fromOffset(8, 30), BackgroundTransparency = 1, ZIndex = 10000}, frame)
-    local layout = new("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
-    local object = {Visible = true, Shown = false}
+    local frameStroke = stroke(frame, Library.Theme.Stroke, 0.15)
+    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1, ZIndex = 10000}, frame)
+    local iconAccent = new("Frame", {Size = UDim2.fromOffset(22, 22), Position = UDim2.fromOffset(8, 4), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, ZIndex = 10001}, header)
+    round(iconAccent, 5)
+    new("ImageLabel", {Size = UDim2.new(1, -4, 1, -4), Position = UDim2.fromOffset(2, 2), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Color3.new(1, 1, 1), ScaleType = Enum.ScaleType.Fit, ZIndex = 10002}, iconAccent)
+    local titleLabel = new("TextLabel", {Size = UDim2.new(1, -44, 1, 0), Position = UDim2.fromOffset(38, 0), BackgroundTransparency = 1, Text = "KEYBIND LIST", TextColor3 = Color3.new(1, 1, 1), TextSize = 14, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10001}, header)
+    new("UIGradient", {Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Library.Theme.Accent), ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))}), Rotation = 0}, titleLabel)
+    new("Frame", {Size = UDim2.new(1, -16, 0, 1), Position = UDim2.fromOffset(8, 30), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 10000}, frame)
+    local bindsBg = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, 34), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Color3.fromRGB(18, 20, 26), BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 9999}, frame)
+    round(bindsBg, 5)
+    stroke(bindsBg, Library.Theme.Stroke, 0.6)
+    local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, 4), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 10000}, bindsBg)
+    local layout = new("UIListLayout", {Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
+    new("UIPadding", {PaddingBottom = UDim.new(0, 4)}, bindsBg)
+    local object = {Visible = true, Shown = false, IntroPending = true}
+    table.insert(self.IntroWidgets, {Object = frame, Kind = "KeybindList", KL = object})
     local drag, dragStart, startPos
     connect(frame.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = true dragStart = input.Position startPos = frame.Position end
@@ -1313,6 +1339,11 @@ function WindowMethods:KeybindList()
     local function show()
         if object.Shown then return end
         object.Shown = true
+        if object.IntroPending then
+            frame.Visible = false
+            frame.GroupTransparency = 1
+            return
+        end
         frame.Visible = true
         frame.GroupTransparency = 1
         tween(frame, {GroupTransparency = 0}, 0.2, Enum.EasingStyle.Quint)
@@ -1323,11 +1354,12 @@ function WindowMethods:KeybindList()
         tween(frame, {GroupTransparency = 1}, 0.15).Completed:Connect(function() if not object.Shown then frame.Visible = false end end)
     end
     local function addRow(modeText, nameText, keyText, order)
-        local row = new("CanvasGroup", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, GroupTransparency = 0, LayoutOrder = order, ZIndex = 10000}, holder)
-        new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, row)
-        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "(" .. modeText .. ")", TextColor3 = Library.Theme.Dim, TextSize = 10, LayoutOrder = 1, ZIndex = 10001}, row)
-        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = nameText .. ":", TextColor3 = Color3.fromRGB(240, 240, 240), TextSize = 10, LayoutOrder = 2, ZIndex = 10001}, row)
-        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = keyText, TextColor3 = Library.Theme.Accent, TextSize = 10, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), LayoutOrder = 3, ZIndex = 10001}, row)
+        local row = new("CanvasGroup", {Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, GroupTransparency = 0, LayoutOrder = order, ZIndex = 10000}, holder)
+        new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder}, row)
+        new("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, row)
+        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "(" .. modeText .. ")", TextColor3 = Library.Theme.Dim, TextSize = 11, LayoutOrder = 1, ZIndex = 10001}, row)
+        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = nameText .. ":", TextColor3 = Color3.fromRGB(240, 240, 240), TextSize = 11, LayoutOrder = 2, ZIndex = 10001}, row)
+        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = keyText, TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), LayoutOrder = 3, ZIndex = 10001}, row)
     end
     local function refresh()
         for _, child in ipairs(holder:GetChildren()) do
@@ -1341,17 +1373,17 @@ function WindowMethods:KeybindList()
             end
         end
         if count == 0 then
-            local empty = new("TextLabel", {Size = UDim2.new(1, 0, 0, 14), BackgroundTransparency = 1, Text = "empty", TextColor3 = Library.Theme.Dim, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10001}, holder)
+            local empty = new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Text = "empty", TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 10001}, holder)
             empty.LayoutOrder = 1
         end
         local rows = math.max(count, 1)
-        local height = 30 + rows * 18 + (rows > 0 and 6 or 0)
-        frame.Size = UDim2.fromOffset(140, height)
+        local height = 36 + rows * 20 + 10
+        frame.Size = UDim2.fromOffset(178, height)
         if object.Visible then show() else hide() end
     end
     connect(layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
         local h = layout.AbsoluteContentSize.Y
-        frame.Size = UDim2.fromOffset(140, 30 + h + (h > 0 and 6 or 0))
+        frame.Size = UDim2.fromOffset(178, 36 + h + 10)
     end)
     function object:SetVisibility(value) object.Visible = value == true; refresh() end
     function object:Add() refresh() end
