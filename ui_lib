@@ -360,7 +360,6 @@ function Library:Window(data)
     local tabBar = new("Frame", {Size = UDim2.new(1, -292, 0, 34), Position = UDim2.fromOffset(276, 2), BackgroundTransparency = 1, BorderSizePixel = 0}, header)
     new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 18), VerticalAlignment = Enum.VerticalAlignment.Center}, tabBar)
     local underline = new("Frame", {Size = UDim2.fromOffset(0, 2), Position = UDim2.fromOffset(0, 33), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0}, main)
-    local underlineGlow = softOuterGlow(underline, Library.Theme.Accent, 4, 1, 0.55)
     round(underline, 3)
     new("UIGradient", {Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.92), NumberSequenceKeypoint.new(0.12, 0), NumberSequenceKeypoint.new(0.88, 0), NumberSequenceKeypoint.new(1, 0.92)})}, underline)
     local underlineBloom = new("UIStroke", {Color = Library.Theme.Accent, Thickness = 4, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, underline)
@@ -1469,6 +1468,7 @@ function WindowMethods:KeybindList()
     local object = {Visible = true, Shown = false, IntroPending = true}
     table.insert(self.IntroWidgets, {Object = frame, Kind = "KeybindList", KL = object})
     local rowRegistry = {}
+    local rowLayouts = setmetatable({}, {__mode = "k"})
     local drag, dragStart, startPos
     connect(header.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = true dragStart = input.Position startPos = frame.Position end
@@ -1508,7 +1508,7 @@ function WindowMethods:KeybindList()
         local nameLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = nameText, TextColor3 = Color3.fromRGB(230, 230, 230), TextSize = 11, LayoutOrder = 2, ZIndex = 10002}, inner)
         local dashLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "-", TextColor3 = Library.Theme.Dim, TextSize = 11, LayoutOrder = 3, ZIndex = 10002}, inner)
         local keyLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = keyText, TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), LayoutOrder = 4, ZIndex = 10002}, inner)
-        row._innerLayout = innerLayout
+        rowLayouts[row] = innerLayout
         connect(innerLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
             if updateSize then updateSize() end
         end)
@@ -1576,7 +1576,7 @@ function WindowMethods:KeybindList()
     local function computeWidth()
         local maxRowW = 0
         for _, row in pairs(rowRegistry) do
-            local il = row._innerLayout
+            local il = rowLayouts[row]
             if il then
                 local w = il.AbsoluteContentSize.X
                 if w > maxRowW then maxRowW = w end
