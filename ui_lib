@@ -111,29 +111,31 @@ local function softRingGlow(box, color, layers, extraExpand)
     color = color or Library.Theme.Accent
     layers = layers or 6
     extraExpand = extraExpand or 8
+    local parent = box.Parent
     local glowHost = new("Frame", {
-        Size = UDim2.new(1, 0, 1, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = box.Size,
+        Position = box.Position,
+        AnchorPoint = box.AnchorPoint,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ZIndex = (box.ZIndex or 1) - 1,
-    }, box)
-    new("UICorner", {CornerRadius = UDim.new(1, 0)}, glowHost)
+        ZIndex = math.max((box.ZIndex or 1) - 1, 1),
+    }, parent)
+    new("UICorner", {CornerRadius = UDim.new(0, 2)}, glowHost)
+    connect(box:GetPropertyChangedSignal("Size"), function() glowHost.Size = box.Size end)
+    connect(box:GetPropertyChangedSignal("Position"), function() glowHost.Position = box.Position end)
     local ring = {}
     for i = 1, layers do
         local t = (i - 1) / math.max(layers - 1, 1)
-        local thickness = 1 + t * extraExpand
-        local trans = 1
+        local thickness = 2 + t * extraExpand * 2
         local s = new("UIStroke", {
             Color = color,
             Thickness = thickness,
-            Transparency = trans,
+            Transparency = 1,
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
             LineJoinMode = Enum.LineJoinMode.Round,
         }, glowHost)
         ring[i] = s
-        softRingTargets[s] = 0.25 + t * 0.72
+        softRingTargets[s] = 0.35 + t * 0.6
     end
     return ring
 end
