@@ -109,35 +109,31 @@ end
 local softRingTargets = setmetatable({}, {__mode = "k"})
 local function softRingGlow(box, color, layers, extraExpand)
     color = color or Library.Theme.Accent
-    extraExpand = extraExpand or 14
-    local baseSize = math.max(box.Size.X.Offset, box.Size.Y.Offset)
-    if baseSize <= 0 then baseSize = 13 end
-    local dotSize = baseSize + extraExpand * 2
-    local specs = {
-        {scale = 1.35, transparency = 0.82},
-        {scale = 1.10, transparency = 0.60},
-        {scale = 0.90, transparency = 0.35},
-    }
+    layers = layers or 6
+    extraExpand = extraExpand or 8
+    local glowHost = new("Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = (box.ZIndex or 1) - 1,
+    }, box)
+    new("UICorner", {CornerRadius = UDim.new(1, 0)}, glowHost)
     local ring = {}
-    for i, spec in ipairs(specs) do
-        local sz = dotSize * spec.scale
-        local dot = new("TextLabel", {
-            Size = UDim2.fromOffset(sz, sz),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Text = "\226\151\143",
-            Font = Enum.Font.GothamBold,
-            TextSize = sz,
-            TextColor3 = color,
-            TextTransparency = 1,
-            TextStrokeTransparency = 1,
-            RichText = false,
-            ZIndex = (box.ZIndex or 1) - 1 - i,
-        }, box)
-        ring[i] = dot
-        softRingTargets[dot] = spec.transparency
+    for i = 1, layers do
+        local t = (i - 1) / math.max(layers - 1, 1)
+        local thickness = 1 + t * extraExpand
+        local trans = 1
+        local s = new("UIStroke", {
+            Color = color,
+            Thickness = thickness,
+            Transparency = trans,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+            LineJoinMode = Enum.LineJoinMode.Round,
+        }, glowHost)
+        ring[i] = s
+        softRingTargets[s] = 0.25 + t * 0.72
     end
     return ring
 end
@@ -682,9 +678,9 @@ function SectionMethods:Checkbox(name, default, callback, style)
         boxStroke.Color = value and accent or Library.Theme.Stroke
         tween(label, {TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim)}, 0.14)
         for _, layer in ipairs(glowLayers) do
-            layer.TextColor3 = accent
+            layer.Color = accent
             local target = softRingTargets[layer] or 0.5
-            tween(layer, {TextTransparency = value and target or 1}, 0.18)
+            tween(layer, {Transparency = value and target or 1}, 0.18)
         end
         if value then scale.Scale = 0.82 tween(scale, {Scale = 1}, 0.2) end
         if not silent then Library:SafeCall(callback, value) end
