@@ -94,26 +94,6 @@ local function text(value)
     return tostring(value or "")
 end
 
-local function accentGlowFrame(parent, expand, alpha)
-    expand = expand or 16
-    alpha = alpha or 0.72
-    local g = Instance.new("ImageLabel")
-    g.Name = "__glow"
-    g.Size = UDim2.new(1, expand * 2, 1, expand * 2)
-    g.Position = UDim2.new(0.5, 0, 0.5, 0)
-    g.AnchorPoint = Vector2.new(0.5, 0.5)
-    g.BackgroundTransparency = 1
-    g.BorderSizePixel = 0
-    g.Image = "rbxassetid://5028857472"
-    g.ImageColor3 = Library.Theme.Accent
-    g.ImageTransparency = alpha
-    g.ScaleType = Enum.ScaleType.Fit
-    g.ZIndex = (parent.ZIndex or 1) - 1
-    g.Parent = parent
-    Library.Objects[#Library.Objects + 1] = g
-    return g
-end
-
 local function repositionRightWidgets(parent)
     if not parent then return end
     local rightEdge = -6
@@ -300,8 +280,7 @@ function Library:Window(data)
     local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1, Visible = false}, gui)
     local mainScale = new("UIScale", {Scale = 0.985}, main)
     round(main, 4)
-    local mainGlow = accentGlowFrame(main, 22, 1)
-    mainGlow.ZIndex = 0
+    local mainStroke = stroke(main, Library.Theme.Stroke, 1, 1)
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Library.Theme.Bg, BackgroundTransparency = 0, BorderSizePixel = 0}, main)
     local logo = new("Frame", {Size = UDim2.fromOffset(36, 36), Position = UDim2.fromOffset(10, 1), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0, BorderSizePixel = 0}, header)
     round(logo, 7)
@@ -330,24 +309,19 @@ function Library:Window(data)
     local pageRoot = new("Frame", {Size = UDim2.new(1, -20, 1, -52), Position = UDim2.fromOffset(10, 44), BackgroundTransparency = 1, ClipsDescendants = true}, main)
     local notifyHolder = new("Frame", {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -14, 1, -14), Size = UDim2.fromOffset(260, 360), BackgroundTransparency = 1, ZIndex = 9500}, gui)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Bottom}, notifyHolder)
-    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, MainGlow = mainGlow, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage, IntroWidgets = {}}, WindowMethods)
+    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, MainStroke = mainStroke, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage, IntroWidgets = {}}, WindowMethods)
     self.Windows[#self.Windows + 1] = window
     task.defer(function()
         main.Visible = true
         tween(main, {GroupTransparency = 0}, 0.22)
         tween(mainScale, {Scale = 1}, 0.22, Enum.EasingStyle.Back)
-        tween(mainGlow, {ImageTransparency = 0.72}, 0.28)
+        tween(mainStroke, {Transparency = 0.15}, 0.28)
         for _, w in ipairs(window.IntroWidgets) do
             if w.Object and w.Object.Parent then
                 if w.KL then w.KL.IntroPending = false end
                 w.Object.Visible = true
                 w.Object.GroupTransparency = 1
                 tween(w.Object, {GroupTransparency = 0}, 0.22)
-                if w.Glow then
-                    w.Glow.Visible = true
-                    w.Glow.ImageTransparency = 1
-                    tween(w.Glow, {ImageTransparency = w.GlowAlpha or 0.72}, 0.28)
-                end
             end
         end
     end)
@@ -636,7 +610,12 @@ function SectionMethods:Checkbox(name, default, callback, style)
     local boxStroke = stroke(box, value and Library.Theme.Accent or Library.Theme.Stroke, 0.08)
     local gradient = new("UIGradient", {Rotation = 90, Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
     local scale = new("UIScale", {Scale = 1}, box)
-    local glow = new("ImageLabel", {Size = UDim2.new(1, 22, 1, 22), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://5028857472", ImageColor3 = Library.Theme.Accent, ImageTransparency = 1, ScaleType = Enum.ScaleType.Fit, ZIndex = 15}, box)
+    local glowHolder = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = box.ZIndex - 1}, box)
+    round(glowHolder, 3)
+    local glowStrokes = {}
+    for i = 1, 3 do
+        glowStrokes[i] = new("UIStroke", {Color = Library.Theme.Accent, Thickness = i * 2, Transparency = 1}, glowHolder)
+    end
     local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8}, row)
     local control = {Instance = row}
     local function apply(newValue, silent)
@@ -646,8 +625,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
         gradient.Color = value and ColorSequence.new(accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
         boxStroke.Color = value and accent or Library.Theme.Stroke
         tween(label, {TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim)}, 0.14)
-        glow.ImageColor3 = accent
-        tween(glow, {ImageTransparency = value and 0.15 or 1}, 0.18)
+        for i, gs in ipairs(glowStrokes) do gs.Color = accent tween(gs, {Transparency = value and (0.55 + i * 0.12) or 1}, 0.16) end
         if value then scale.Scale = 0.82 tween(scale, {Scale = 1}, 0.2) end
         if not silent then Library:SafeCall(callback, value) end
     end
@@ -1297,18 +1275,7 @@ end
 function WindowMethods:Watermark(defaultText)
     if type(defaultText) == "table" then defaultText = defaultText.Name or defaultText.Text or defaultText.Title end
     local wm = new("CanvasGroup", {Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(0, 30), AnchorPoint = Vector2.new(0.5, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, BorderSizePixel = 0, GroupTransparency = 1, Visible = false, ZIndex = 9700}, self.Gui)
-    local wmGlow = new("ImageLabel", {Parent = self.Gui, BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://5028857472", ImageColor3 = Library.Theme.Accent, ImageTransparency = 1, ScaleType = Enum.ScaleType.Fit, ZIndex = 9699, Visible = false, AnchorPoint = Vector2.new(0.5, 0.5)})
-    local function syncGlow()
-        if not wm.Parent then return end
-        local ap, sz = wm.AbsolutePosition, wm.AbsoluteSize
-        if sz.X <= 0 or sz.Y <= 0 then return end
-        wmGlow.Position = UDim2.fromOffset(ap.X + sz.X * 0.5, ap.Y + sz.Y * 0.5)
-        wmGlow.Size = UDim2.fromOffset(sz.X + 44, sz.Y + 44)
-    end
-    connect(wm:GetPropertyChangedSignal("AbsoluteSize"), syncGlow)
-    connect(wm:GetPropertyChangedSignal("AbsolutePosition"), syncGlow)
-    task.defer(syncGlow)
-    table.insert(self.IntroWidgets, {Object = wm, Kind = "Watermark", Glow = wmGlow, GlowAlpha = 0.72})
+    table.insert(self.IntroWidgets, {Object = wm, Kind = "Watermark"})
     new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, wm)
     local function mkWin(defText, order, isTitle, iconAsset)
         local frame = new("Frame", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, LayoutOrder = order, ZIndex = 9701, ClipsDescendants = true}, wm)
@@ -1393,28 +1360,19 @@ function WindowMethods:KeybindList()
     local bindsPadTop, bindsPadBot = overlap + 2, 6
     local initialY = headerH - 6 + 8 + 8 + 6
     local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(width, initialY), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
-    local frameGlow = new("ImageLabel", {Parent = self.Gui, BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://5028857472", ImageColor3 = Library.Theme.Accent, ImageTransparency = 1, ScaleType = Enum.ScaleType.Fit, ZIndex = 9998, Visible = false, AnchorPoint = Vector2.new(0.5, 0.5)})
-    local function syncFrameGlow()
-        if not frame.Parent then return end
-        local ap, sz = frame.AbsolutePosition, frame.AbsoluteSize
-        if sz.X <= 0 or sz.Y <= 0 then return end
-        frameGlow.Position = UDim2.fromOffset(ap.X + sz.X * 0.5, ap.Y + sz.Y * 0.5)
-        frameGlow.Size = UDim2.fromOffset(sz.X + 44, sz.Y + 44)
-    end
-    connect(frame:GetPropertyChangedSignal("AbsoluteSize"), syncFrameGlow)
-    connect(frame:GetPropertyChangedSignal("AbsolutePosition"), syncFrameGlow)
-    task.defer(syncFrameGlow)
     local bindsBg = new("CanvasGroup", {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.fromOffset(0, headerH - overlap), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Color3.fromRGB(6, 6, 8), BackgroundTransparency = 0.4, BorderSizePixel = 0, GroupTransparency = 1, Visible = true, ZIndex = 9998, ClipsDescendants = true}, frame)
     round(bindsBg, 5)
+    stroke(bindsBg, Library.Theme.Stroke, 0.4)
     local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, bindsPadTop), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 10000}, bindsBg)
     local layout = new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
     new("UIPadding", {PaddingBottom = UDim.new(0, bindsPadBot)}, bindsBg)
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, headerH), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, ZIndex = 10010}, frame)
     round(header, 5)
+    stroke(header, Library.Theme.Stroke, 0.25)
     local icon = new("ImageLabel", {Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(9, 6), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10011}, header)
     local titleLabel = new("TextLabel", {Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(26, 0), BackgroundTransparency = 1, Text = "Keybind List (0)", TextColor3 = Color3.new(1, 1, 1), TextSize = 12, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10011}, header)
     local object = {Visible = true, Shown = false, IntroPending = true}
-    table.insert(self.IntroWidgets, {Object = frame, Kind = "KeybindList", KL = object, Glow = frameGlow, GlowAlpha = 0.7})
+    table.insert(self.IntroWidgets, {Object = frame, Kind = "KeybindList", KL = object})
     local rowRegistry = {}
     local drag, dragStart, startPos
     connect(header.InputBegan, function(input)
