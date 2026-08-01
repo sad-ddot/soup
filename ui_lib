@@ -1322,24 +1322,30 @@ function WindowMethods:Watermark(defaultText)
 end
 
 function WindowMethods:KeybindList()
-    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(158, 28), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
-    round(frame, 6)
-    stroke(frame, Library.Theme.Stroke, 0.2)
-    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 10000}, frame)
-    new("ImageLabel", {Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(8, 5), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10001}, header)
-    local titleLabel = new("TextLabel", {Size = UDim2.new(1, -32, 1, 0), Position = UDim2.fromOffset(26, 0), BackgroundTransparency = 1, Text = "Keybind list", TextColor3 = Color3.new(1, 1, 1), TextSize = 12, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10001}, header)
-    local separator = new("Frame", {Size = UDim2.new(1, -12, 0, 1), Position = UDim2.fromOffset(6, 24), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 10000}, frame)
-    local bindsBg = new("Frame", {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.fromOffset(0, 25), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Color3.fromRGB(12, 12, 12), BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 9999}, frame)
-    local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, 4), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 10000}, bindsBg)
-    local layout = new("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
-    new("UIPadding", {PaddingBottom = UDim.new(0, 4)}, bindsBg)
+    local width = 178
+    local headerH = 26
+    local rowH = 18
+    local bindsPadTop, bindsPadBot = 4, 6
+    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(width, headerH), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999}, self.Gui)
+    local header = new("Frame", {Size = UDim2.new(1, 0, 0, headerH), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, ZIndex = 10000}, frame)
+    round(header, 5)
+    stroke(header, Library.Theme.Stroke, 0.25)
+    local icon = new("ImageLabel", {Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(9, 6), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10001}, header)
+    local titleLabel = new("TextLabel", {Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(26, 0), BackgroundTransparency = 1, Text = "Keybind List (0)", TextColor3 = Color3.new(1, 1, 1), TextSize = 12, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10001}, header)
+    local bindsBg = new("Frame", {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.fromOffset(0, headerH + 2), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Color3.fromRGB(6, 6, 8), BackgroundTransparency = 0.4, BorderSizePixel = 0, Visible = false, ZIndex = 9998, ClipsDescendants = true}, frame)
+    round(bindsBg, 5)
+    stroke(bindsBg, Library.Theme.Stroke, 0.45)
+    local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, bindsPadTop), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 10000}, bindsBg)
+    local layout = new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
+    new("UIPadding", {PaddingBottom = UDim.new(0, bindsPadBot)}, bindsBg)
     local object = {Visible = true, Shown = false, IntroPending = true}
     table.insert(self.IntroWidgets, {Object = frame, Kind = "KeybindList", KL = object})
+    local rowRegistry = {}
     local drag, dragStart, startPos
-    connect(frame.InputBegan, function(input)
+    connect(header.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = true dragStart = input.Position startPos = frame.Position end
     end)
-    connect(frame.InputEnded, function(input)
+    connect(header.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
     end)
     connect(UIS.InputChanged, function(input)
@@ -1365,37 +1371,83 @@ function WindowMethods:KeybindList()
         object.Shown = false
         tween(frame, {GroupTransparency = 1}, 0.15).Completed:Connect(function() if not object.Shown then frame.Visible = false end end)
     end
-    local function addRow(modeText, nameText, keyText, order)
-        local row = new("CanvasGroup", {Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, GroupTransparency = 0, LayoutOrder = order, ZIndex = 10000}, holder)
-        new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, row)
-        new("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, row)
-        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "(" .. modeText .. ")", TextColor3 = Library.Theme.Dim, TextSize = 9, LayoutOrder = 1, ZIndex = 10001}, row)
-        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = nameText .. ":", TextColor3 = Color3.fromRGB(240, 240, 240), TextSize = 9, LayoutOrder = 2, ZIndex = 10001}, row)
-        new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = keyText, TextColor3 = Library.Theme.Accent, TextSize = 9, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), LayoutOrder = 3, ZIndex = 10001}, row)
+    local function makeRow(key, modeText, nameText, keyText, order)
+        local row = new("Frame", {Name = "row_" .. key, Size = UDim2.new(1, 0, 0, rowH), BackgroundTransparency = 1, BorderSizePixel = 0, LayoutOrder = order, ZIndex = 10000}, holder)
+        local inner = new("CanvasGroup", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, GroupTransparency = 1, ZIndex = 10001}, row)
+        new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, inner)
+        new("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, inner)
+        local modeLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "[" .. modeText .. "]", TextColor3 = Library.Theme.Dim, TextSize = 11, LayoutOrder = 1, ZIndex = 10002}, inner)
+        local nameLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = nameText, TextColor3 = Color3.fromRGB(230, 230, 230), TextSize = 11, LayoutOrder = 2, ZIndex = 10002}, inner)
+        local dashLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "-", TextColor3 = Library.Theme.Dim, TextSize = 11, LayoutOrder = 3, ZIndex = 10002}, inner)
+        local keyLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = keyText, TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), LayoutOrder = 4, ZIndex = 10002}, inner)
+        task.defer(function()
+            if inner and inner.Parent then
+                tween(inner, {Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 0}, 0.22, Enum.EasingStyle.Quint)
+            end
+        end)
+        return row
+    end
+    local function removeRow(row)
+        if not row or not row.Parent then return end
+        local inner = row:FindFirstChildOfClass("CanvasGroup")
+        if inner then
+            tween(inner, {Position = UDim2.new(1, 0, 0, 0), GroupTransparency = 1}, 0.16, Enum.EasingStyle.Quint)
+        end
+        tween(row, {Size = UDim2.new(1, 0, 0, 0)}, 0.18).Completed:Connect(function()
+            if row and row.Parent then row:Destroy() end
+        end)
+    end
+    local function entryKey(entry)
+        return tostring(entry.Flag or entry.Name or entry)
     end
     local function refresh()
-        for _, child in ipairs(holder:GetChildren()) do
-            if child:IsA("GuiObject") then child:Destroy() end
-        end
+        local active = {}
+        local activeOrder = {}
         local count = 0
         for _, entry in ipairs(Library.Keybinds) do
             if entry.State and entry.State.Toggled and entry.State.Key and (not entry.ParentFlag or Library.Flags[entry.ParentFlag] == true) then
                 count += 1
-                addRow(tostring(entry.State.Mode or "Toggle"), tostring(entry.Name or entry.Flag or "Bind"), keyName(entry.State.Key), count)
+                local k = entryKey(entry)
+                active[k] = {mode = tostring(entry.State.Mode or "Toggle"), name = tostring(entry.Name or entry.Flag or "Bind"), key = keyName(entry.State.Key), order = count}
+                activeOrder[#activeOrder + 1] = k
             end
         end
-        if count == 0 then
-            local empty = new("TextLabel", {Size = UDim2.new(1, 0, 0, 14), BackgroundTransparency = 1, Text = "empty", TextColor3 = Library.Theme.Dim, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 10001}, holder)
-            empty.LayoutOrder = 1
+        titleLabel.Text = "Keybind List (" .. count .. ")"
+        bindsBg.Visible = count > 0
+        for k, row in pairs(rowRegistry) do
+            if not active[k] then
+                removeRow(row)
+                rowRegistry[k] = nil
+            end
         end
-        local rows = math.max(count, 1)
-        local height = 25 + rows * 16 + 10
-        frame.Size = UDim2.fromOffset(158, height)
+        for _, k in ipairs(activeOrder) do
+            local info = active[k]
+            local existing = rowRegistry[k]
+            if existing and existing.Parent then
+                existing.LayoutOrder = info.order
+                local inner = existing:FindFirstChildOfClass("CanvasGroup")
+                if inner then
+                    for _, c in ipairs(inner:GetChildren()) do
+                        if c:IsA("TextLabel") then
+                            if c.LayoutOrder == 1 then c.Text = "[" .. info.mode .. "]"
+                            elseif c.LayoutOrder == 2 then c.Text = info.name
+                            elseif c.LayoutOrder == 4 then c.Text = info.key end
+                        end
+                    end
+                end
+            else
+                rowRegistry[k] = makeRow(k, info.mode, info.name, info.key, info.order)
+            end
+        end
         if object.Visible then show() else hide() end
     end
     connect(layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
         local h = layout.AbsoluteContentSize.Y
-        frame.Size = UDim2.fromOffset(158, 25 + h + 10)
+        if h <= 0 then
+            frame.Size = UDim2.fromOffset(width, headerH)
+        else
+            frame.Size = UDim2.fromOffset(width, headerH + 2 + h + bindsPadTop + bindsPadBot)
+        end
     end)
     function object:SetVisibility(value) object.Visible = value == true; refresh() end
     function object:Add() refresh() end
