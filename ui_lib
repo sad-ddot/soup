@@ -360,6 +360,7 @@ function Library:Window(data)
     local tabBar = new("Frame", {Size = UDim2.new(1, -292, 0, 34), Position = UDim2.fromOffset(276, 2), BackgroundTransparency = 1, BorderSizePixel = 0}, header)
     new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 18), VerticalAlignment = Enum.VerticalAlignment.Center}, tabBar)
     local underline = new("Frame", {Size = UDim2.fromOffset(0, 2), Position = UDim2.fromOffset(0, 33), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0}, main)
+    local underlineGlow = softOuterGlow(underline, Library.Theme.Accent, 4, 1, 0.55)
     round(underline, 3)
     new("UIGradient", {Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.92), NumberSequenceKeypoint.new(0.12, 0), NumberSequenceKeypoint.new(0.88, 0), NumberSequenceKeypoint.new(1, 0.92)})}, underline)
     local underlineBloom = new("UIStroke", {Color = Library.Theme.Accent, Thickness = 4, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, underline)
@@ -610,7 +611,7 @@ function PageMethods:SubPage(data)
             self.CurrentSubPage = label
             for buttonName, buttonData in pairs(self.SubPageButtons) do
                 local on = buttonName == label
-                tween(buttonData.Button, {TextColor3 = on and Library.Theme.Accent or Library.Theme.Dim, BackgroundTransparency = on and 0.88 or 1}, 0.16)
+                tween(buttonData.Button, {TextColor3 = on and Color3.new(1, 1, 1) or Library.Theme.Dim, BackgroundTransparency = on and 0.88 or 1}, 0.16)
                 buttonData.Accent.Visible = on
             end
             for _, section in ipairs(self.Sections) do
@@ -671,7 +672,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
     local scale = new("UIScale", {Scale = 1}, box)
     local fill = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = value and 0 or 1, BorderSizePixel = 0, ZIndex = 9}, box)
     round(fill, 2)
-    local glowLayers = softRingGlow(box, Library.Theme.Accent, 12, 3)
+    local glowLayers = softRingGlow(box, Library.Theme.Accent, 10, 3)
     local checkmark = new("ImageLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -1449,21 +1450,22 @@ function WindowMethods:Watermark(defaultText)
 end
 
 function WindowMethods:KeybindList()
-    local width = 178
+    local minWidth = 138
+    local currentWidth = minWidth
     local headerH = 26
     local rowH = 18
     local bindsPadTop, bindsPadBot = 4, 6
     local initialY = headerH + bindsPadTop + 8 + bindsPadBot
-    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(width, initialY), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999, ClipsDescendants = true}, self.Gui)
+    local frame = new("CanvasGroup", {Position = UDim2.new(0, 14, 0.5, -40), Size = UDim2.fromOffset(minWidth, initialY), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9999, ClipsDescendants = true}, self.Gui)
     round(frame, 6)
     softOuterGlow(frame, Library.Theme.Stroke, 5, 1, 0.32)
-    local bindsBg = new("Frame", {Size = UDim2.new(1, 0, 1, -headerH), Position = UDim2.fromOffset(0, headerH), BackgroundColor3 = Color3.fromRGB(6, 6, 8), BackgroundTransparency = 0.45, BorderSizePixel = 0, ZIndex = 9998, ClipsDescendants = true}, frame)
+    local bindsBg = new("Frame", {Size = UDim2.new(1, 0, 1, -headerH), Position = UDim2.fromOffset(0, headerH), BackgroundColor3 = Library.Theme.Panel, BackgroundTransparency = 0, BorderSizePixel = 0, ZIndex = 9998, ClipsDescendants = true}, frame)
     local holder = new("Frame", {Size = UDim2.new(1, -12, 0, 0), Position = UDim2.fromOffset(6, bindsPadTop), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 10000}, bindsBg)
     local layout = new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, headerH), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 10010}, frame)
     local separator = new("Frame", {Size = UDim2.new(1, -12, 0, 1), Position = UDim2.fromOffset(6, headerH - 1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.55, BorderSizePixel = 0, ZIndex = 10011}, frame)
-    local icon = new("ImageLabel", {Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(9, 6), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10011}, header)
-    local titleLabel = new("TextLabel", {Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(26, 0), BackgroundTransparency = 1, Text = "Keybind List (0)", TextColor3 = Color3.new(1, 1, 1), TextSize = 12, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10011}, header)
+    local icon = new("ImageLabel", {Size = UDim2.fromOffset(17, 17), Position = UDim2.fromOffset(8, 4), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 10011}, header)
+    local titleLabel = new("TextLabel", {Size = UDim2.new(1, -38, 1, 0), Position = UDim2.fromOffset(30, 0), BackgroundTransparency = 1, Text = "Keybind List (0)", TextColor3 = Color3.new(1, 1, 1), TextSize = 12, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 10011}, header)
     local object = {Visible = true, Shown = false, IntroPending = true}
     table.insert(self.IntroWidgets, {Object = frame, Kind = "KeybindList", KL = object})
     local rowRegistry = {}
@@ -1500,16 +1502,21 @@ function WindowMethods:KeybindList()
     local function makeRow(key, modeText, nameText, keyText, order)
         local row = new("Frame", {Name = "row_" .. key, Size = UDim2.new(1, 0, 0, rowH), BackgroundTransparency = 1, BorderSizePixel = 0, LayoutOrder = order, ZIndex = 10000}, holder)
         local inner = new("CanvasGroup", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, GroupTransparency = 1, ZIndex = 10001}, row)
-        new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, inner)
+        local innerLayout = new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, inner)
         new("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, inner)
         local modeLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "[" .. modeText .. "]", TextColor3 = Library.Theme.Dim, TextSize = 11, LayoutOrder = 1, ZIndex = 10002}, inner)
         local nameLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = nameText, TextColor3 = Color3.fromRGB(230, 230, 230), TextSize = 11, LayoutOrder = 2, ZIndex = 10002}, inner)
         local dashLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = "-", TextColor3 = Library.Theme.Dim, TextSize = 11, LayoutOrder = 3, ZIndex = 10002}, inner)
         local keyLbl = new("TextLabel", {Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Text = keyText, TextColor3 = Library.Theme.Accent, TextSize = 11, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal), LayoutOrder = 4, ZIndex = 10002}, inner)
+        row._innerLayout = innerLayout
+        connect(innerLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+            if updateSize then updateSize() end
+        end)
         task.defer(function()
             if inner and inner.Parent then
                 tween(inner, {Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 0}, 0.22, Enum.EasingStyle.Quint)
             end
+            if updateSize then updateSize() end
         end)
         return row
     end
@@ -1566,13 +1573,29 @@ function WindowMethods:KeybindList()
         end
         if object.Visible then show() else hide() end
     end
-    connect(layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+    local function computeWidth()
+        local maxRowW = 0
+        for _, row in pairs(rowRegistry) do
+            local il = row._innerLayout
+            if il then
+                local w = il.AbsoluteContentSize.X
+                if w > maxRowW then maxRowW = w end
+            end
+        end
+        local titleW = titleLabel.TextBounds.X + 30 + 16
+        local total = math.max(minWidth, maxRowW + 20, titleW)
+        return math.floor(total + 0.5)
+    end
+    local function updateSize()
         local h = layout.AbsoluteContentSize.Y
         local minEmptyH = 8
         local contentH = math.max(h, minEmptyH)
         local targetY = headerH + bindsPadTop + contentH + bindsPadBot
-        tween(frame, {Size = UDim2.fromOffset(width, targetY)}, 0.22, Enum.EasingStyle.Quint)
-    end)
+        currentWidth = computeWidth()
+        tween(frame, {Size = UDim2.fromOffset(currentWidth, targetY)}, 0.28, Enum.EasingStyle.Quint)
+    end
+    connect(layout:GetPropertyChangedSignal("AbsoluteContentSize"), updateSize)
+    connect(titleLabel:GetPropertyChangedSignal("TextBounds"), updateSize)
     function object:SetVisibility(value) object.Visible = value == true; refresh() end
     function object:Add() refresh() end
     Library.KeyListRefresh = refresh
