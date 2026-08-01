@@ -126,7 +126,7 @@ local function softRingGlow(box, color, layers, extraExpand)
     local ring = {}
     for i = 1, layers do
         local t = (i - 1) / math.max(layers - 1, 1)
-        local thickness = 1 + t * extraExpand * 2
+        local thickness = 1 + i - 1
         local s = new("UIStroke", {
             Color = color,
             Thickness = thickness,
@@ -666,9 +666,11 @@ function SectionMethods:Checkbox(name, default, callback, style)
     local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Text = "", AutoButtonColor = false}, self.Body)
     local box = new("Frame", {Size = UDim2.fromOffset(13, 13), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 8}, row)
     round(box, 2)
+    new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
     local boxStroke = stroke(box, Library.Theme.Stroke, value and 1 or 0.35)
-    local gradient = new("UIGradient", {Rotation = 90, Color = value and ColorSequence.new(Library.Theme.Accent) or ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
     local scale = new("UIScale", {Scale = 1}, box)
+    local fill = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = value and 0 or 1, BorderSizePixel = 0, ZIndex = 9}, box)
+    round(fill, 2)
     local glowLayers = softRingGlow(box, Library.Theme.Accent, 12, 3)
     local checkmark = new("ImageLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -682,7 +684,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 10,
     }, box)
-    local checkScale = new("UIScale", {Scale = 0.6}, checkmark)
+
     local label = new("TextLabel", {Size = UDim2.new(1, -64, 1, 0), Position = UDim2.fromOffset(20, 0), BackgroundTransparency = 1, Text = name, TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8}, row)
     local control = {Instance = row}
     local function apply(newValue, silent)
@@ -691,36 +693,34 @@ function SectionMethods:Checkbox(name, default, callback, style)
         local accent = Library.Theme.Accent
         tween(label, {TextColor3 = risky and riskyColor or (value and Library.Theme.Text or Library.Theme.Dim)}, 0.14)
         if value then
-            gradient.Color = ColorSequence.new(accent)
-            tween(boxStroke, {Transparency = 1}, 0.12)
+            fill.BackgroundColor3 = accent
+            tween(fill, {BackgroundTransparency = 0}, 0.16)
+            tween(boxStroke, {Transparency = 1}, 0.14)
             if scale then scale.Scale = 0.82 tween(scale, {Scale = 1}, 0.2) end
-            task.delay(0.08, function()
+            task.delay(0.10, function()
                 if not value then return end
                 for _, layer in ipairs(glowLayers) do
                     layer.Color = Library.Theme.Accent
                     local target = softRingTargets[layer] or 0.5
-                    tween(layer, {Transparency = target}, 0.16)
+                    tween(layer, {Transparency = target}, 0.18)
                 end
             end)
-            task.delay(0.16, function()
+            task.delay(0.18, function()
                 if not value then return end
-                checkScale.Scale = 0.6
-                tween(checkmark, {ImageTransparency = 0}, 0.14)
-                tween(checkScale, {Scale = 1}, 0.18, Enum.EasingStyle.Back)
+                tween(checkmark, {ImageTransparency = 0}, 0.16)
             end)
         else
             for _, layer in ipairs(glowLayers) do
-                tween(layer, {Transparency = 1}, 0.14)
+                tween(layer, {Transparency = 1}, 0.18)
             end
-            task.delay(0.12, function()
+            task.delay(0.10, function()
                 if value then return end
-                tween(checkmark, {ImageTransparency = 1}, 0.1)
-                tween(checkScale, {Scale = 0.6}, 0.1)
+                tween(checkmark, {ImageTransparency = 1}, 0.14)
             end)
-            task.delay(0.22, function()
+            task.delay(0.20, function()
                 if value then return end
-                gradient.Color = ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))
-                tween(boxStroke, {Transparency = 0.35}, 0.14)
+                tween(fill, {BackgroundTransparency = 1}, 0.22)
+                tween(boxStroke, {Transparency = 0.35}, 0.22)
             end)
         end
         if not silent then Library:SafeCall(callback, value) end
