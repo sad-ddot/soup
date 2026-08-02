@@ -1678,6 +1678,7 @@ function Library:EspPreview(params)
     local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(120, 11), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 11, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 28})
     local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(60, 12), BackgroundTransparency = 1, Text = "15m", TextColor3 = Library.Theme.Text, TextSize = 12, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 28})
     local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(60, 12), BackgroundTransparency = 1, Text = "AKM", TextColor3 = Library.Theme.Text, TextSize = 12, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 28})
+    local weaponIcon = new("ImageLabel", {Parent = overlay, Size = UDim2.fromOffset(22, 22), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "", ScaleType = Enum.ScaleType.Fit, Visible = false, ZIndex = 28})
 
     local HP_SEG_N = 12
     local hpHolder = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(9, BOX_H + 4), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 29})
@@ -1777,6 +1778,7 @@ function Library:EspPreview(params)
         { key = "displayname", obj = displayName, default = "top-center" },
         { key = "distance",    obj = distance,    default = "bottom-center" },
         { key = "weapon",      obj = weapon,      default = "bottom-center" },
+        { key = "weapon_icon", obj = weaponIcon,  default = "bottom-center" },
     }
     local slot_keys = {
         "top-center",
@@ -2146,13 +2148,15 @@ function Library:EspPreview(params)
         weapon.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then weapon.Text = tostring(value) end
     end
+    function preview:SetWeaponIcon(visible, asset, size)
+        weaponIcon.Visible = visible == true and type(asset) == "string" and asset ~= ""
+        if type(asset) == "string" then weaponIcon.Image = asset end
+        local s = tonumber(size) or 22
+        weaponIcon.Size = UDim2.fromOffset(s, s)
+    end
     function preview:SetSkeleton(visible, color)
-        skeleton.Position = box.Position
-        skeleton.Visible = visible == true
-        for _, line in ipairs(skeletonLines) do
-            line.Visible = visible == true
-            line.BackgroundColor3 = colorValue(color, Library.Theme.Accent)
-        end
+        skeleton.Visible = false
+        for _, line in ipairs(skeletonLines) do line.Visible = false end
     end
     function preview:SetChams(visible, fillColor, outlineEnabled, outlineColor)
         if not preview.Player then return end
@@ -2198,6 +2202,7 @@ function Library:EspPreview(params)
             if preview.SetHealth then preview:SetHealth(es.health, 100, es.health_color_top, es.health_color_bottom, es.hp_counter_enabled ~= false) end
             if preview.SetDistance then preview:SetDistance(es.dist, es.dist_color, "15m") end
             if preview.SetWeapon then preview:SetWeapon(es.weapon, es.weapon_color, "AKM") end
+            if preview.SetWeaponIcon then preview:SetWeaponIcon(es.weapon_icon, es._preview_weapon_icon_asset, es.weapon_icon_size) end
             if preview.SetSkeleton then preview:SetSkeleton(es.skeleton, es.skeleton_color) end
             if preview.SetChams then preview:SetChams(es.chams, es.chams_hidden_color, true, Color3.new(0,0,0)) end
         end)
