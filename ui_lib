@@ -295,6 +295,30 @@ local function inBounds(position, frame)
     return position.X >= p.X and position.X <= p.X + s.X and position.Y >= p.Y and position.Y <= p.Y + s.Y
 end
 
+function Library:BindActive(toggleValue, bindFlag)
+    if toggleValue ~= true then return false end
+    local bind = self.Flags[bindFlag]
+    if type(bind) ~= "table" then return false end
+    local k = bind.Key
+    if not k or k == "" or k == "None" or k == "Enum.KeyCode.Backspace" or k == "Enum.KeyCode.Unknown" then
+        return false
+    end
+    local mode = bind.Mode
+    if mode == "Always" then return true end
+    if mode == "Hold" then return bind.active == true end
+    return bind.Toggled == true
+end
+
+function Library:BindIsSet(bindFlag)
+    local bind = self.Flags[bindFlag]
+    if type(bind) ~= "table" then return false end
+    local k = bind.Key
+    if not k or k == "" or k == "None" or k == "Enum.KeyCode.Backspace" or k == "Enum.KeyCode.Unknown" then
+        return false
+    end
+    return true
+end
+
 function Library:SafeCall(callback, ...)
     if type(callback) == "function" then
         return pcall(callback, ...)
