@@ -1954,11 +1954,13 @@ function Library:EspPreview(params)
         frame.Visible = preview.Visible and (not window or window.Main.Visible)
     end
     function preview:DockLeft()
-        dockLeft()
+        dockRight()
     end
-    function preview:SetAutoDock(value)
-        preview.AutoDock = value ~= false
-        dockLeft()
+    function preview:DockRight()
+        dockRight()
+    end
+    function preview:SetAutoDock()
+        dockRight()
     end
     function preview:SetText(value) title.Text = text(value) end
     function preview:RemoveObject(object) if object then pcall(function() object:Destroy() end) end end
