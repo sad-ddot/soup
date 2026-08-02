@@ -2100,6 +2100,9 @@ function Library:EspPreview(params)
     function object:SetSettings(t)
         es_ref = t
     end
+    function object:SetOnChange(fn)
+        params.OnChange = fn
+    end
     function object:Destroy()
         if rs_conn then rs_conn:Disconnect() end
         if hover_conn then hover_conn:Disconnect() end
