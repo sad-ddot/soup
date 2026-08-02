@@ -1649,469 +1649,309 @@ function Library:EspPreview(params)
     params = params or {}
     local window = self.Windows[#self.Windows]
     local parent = window and window.Gui or getParent()
-    local es_ref = params.Settings
-
-    local W, H = 268, 340
-    local frame = new("Frame", {
-        Name = "EspPreview",
-        Parent = parent,
-        Size = UDim2.fromOffset(W, H),
-        Position = UDim2.new(1, -W - 20, 0.5, -H / 2),
-        BackgroundColor3 = Library.Theme.Bg,
-        BorderSizePixel = 0,
-        Visible = false,
-        ZIndex = 5,
-    })
-    round(frame, 6)
-    stroke(frame, Library.Theme.Stroke, 0.2)
-
-    local title = new("TextLabel", {
-        Parent = frame, Size = UDim2.new(1, -12, 0, 18),
-        Position = UDim2.fromOffset(8, 6),
-        BackgroundTransparency = 1,
-        Text = params.Name or "ESP Preview",
-        TextColor3 = Library.Theme.Accent,
-        TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 6,
-    })
-    connect(title.InputBegan, function() end)
-
-    local viewport = new("ViewportFrame", {
-        Parent = frame,
-        Size = UDim2.new(1, -16, 1, -32),
-        Position = UDim2.fromOffset(8, 26),
-        BackgroundColor3 = Color3.fromRGB(15, 16, 20),
-        BorderSizePixel = 0,
-        Ambient = Color3.fromRGB(200, 200, 200),
-        LightColor = Color3.fromRGB(255, 255, 255),
-        LightDirection = Vector3.new(-0.5, -1, -0.5),
-        ZIndex = 6,
-    })
-    round(viewport, 5)
-
-    local wm = Instance.new("WorldModel")
-    wm.Parent = viewport
-
-    local vp_cam = Instance.new("Camera")
-    vp_cam.Parent = viewport
-    viewport.CurrentCamera = vp_cam
-
-    local dummy = nil
-    local dummy_head = nil
-    local function set_dummy(model)
-        if dummy and dummy.Parent then dummy:Destroy() end
-        dummy = model
-        if dummy then
-            dummy.Parent = wm
-            dummy_head = dummy:FindFirstChild("Head") or dummy:FindFirstChildWhichIsA("BasePart")
+    local preview = {Player = nil, Items = {}, AutoDock = true}
+    local frame = makeWidget(parent, "ESPPreview", UDim2.fromOffset(860, 430), UDim2.fromOffset(258, 334))
+    local lastDock = -1
+    local function dockLeft()
+        if not preview.AutoDock or not window or not window.Main or not frame.Parent then return end
+        local now = os.clock()
+        if now - lastDock < 0.08 then return end
+        lastDock = now
+        local p = window.Main.AbsolutePosition
+        local s = frame.AbsoluteSize
+        frame.Position = UDim2.fromOffset(math.max(4, p.X - s.X - 12), p.Y + 56)
+    end
+    dockLeft()
+    local title = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -18, 0, 18), Position = UDim2.fromOffset(9, 5), BackgroundTransparency = 1, Text = params.Name or params.name or "ESP Preview", TextColor3 = Library.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left})
+    connect(frame.InputBegan, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then preview.AutoDock = false end end)
+    connect(title.InputBegan, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then preview.AutoDock = false end end)
+    local viewport = new("ViewportFrame", {Parent = frame, Size = UDim2.new(1, -20, 1, -48), Position = UDim2.fromOffset(10, 30), BackgroundColor3 = Color3.fromRGB(12, 13, 15), BorderSizePixel = 0, Ambient = Color3.fromRGB(180, 180, 180), LightColor = Color3.fromRGB(255, 255, 255), Active = true})
+    local espDrag, espDragStart, espStartPos
+    local function espDragBegin(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            preview.AutoDock = false
+            espDrag = true
+            espDragStart = input.Position
+            espStartPos = frame.Position
         end
     end
-
-    local function try_clone_lp()
-        local lp = game:GetService("Players").LocalPlayer
-        local ch = lp and lp.Character
-        if not ch then return nil end
-        local ok, cl = pcall(function()
-            local c = ch:Clone()
-            for _, d in ipairs(c:GetDescendants()) do
-                if d:IsA("Script") or d:IsA("LocalScript") then d:Destroy() end
-                if d:IsA("Humanoid") then d:Destroy() end
-                if d:IsA("Sound") then d:Destroy() end
-                if d:IsA("ParticleEmitter") then d:Destroy() end
-            end
-            for _, p in ipairs(c:GetDescendants()) do
-                if p:IsA("BasePart") then
-                    p.Anchored = true
-                    p.CanCollide = false
-                end
-            end
-            return c
-        end)
-        if ok and cl then return cl end
-        return nil
-    end
-
-    local function make_placeholder()
-        local m = Instance.new("Model")
-        m.Name = "PreviewDummy"
-        local head = Instance.new("Part")
-        head.Name = "Head"
-        head.Size = Vector3.new(2, 1, 1)
-        head.Anchored = true; head.CanCollide = false
-        head.Color = Color3.fromRGB(200, 190, 170)
-        head.Parent = m
-        m.PrimaryPart = head
-        head.CFrame = CFrame.new(0, 3, 0)
-        local torso = Instance.new("Part")
-        torso.Name = "UpperTorso"
-        torso.Size = Vector3.new(2, 2, 1)
-        torso.Anchored = true; torso.CanCollide = false
-        torso.Color = Color3.fromRGB(80, 100, 140)
-        torso.CFrame = CFrame.new(0, 1.5, 0)
-        torso.Parent = m
-        local lower = Instance.new("Part")
-        lower.Name = "LowerTorso"
-        lower.Size = Vector3.new(2, 2, 1)
-        lower.Anchored = true; lower.CanCollide = false
-        lower.Color = Color3.fromRGB(60, 60, 60)
-        lower.CFrame = CFrame.new(0, -0.5, 0)
-        lower.Parent = m
-        return m
-    end
-
-    task.defer(function()
-        set_dummy(try_clone_lp() or make_placeholder())
+    connect(frame.InputBegan, espDragBegin)
+    connect(title.InputBegan, espDragBegin)
+    connect(viewport.InputBegan, espDragBegin)
+    connect(UIS.InputChanged, function(input)
+        if espDrag and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - espDragStart
+            frame.Position = UDim2.new(espStartPos.X.Scale, espStartPos.X.Offset + delta.X, espStartPos.Y.Scale, espStartPos.Y.Offset + delta.Y)
+        end
     end)
-
-    local function frame_dummy()
-        if not dummy then return end
-        local ok, cf, sz = pcall(function() return dummy:GetBoundingBox() end)
-        if not ok or not sz then return end
-        local center = cf.Position
-        local dist = math.max(sz.X, sz.Y, sz.Z) * 1.6
-        vp_cam.CFrame = CFrame.new(center + Vector3.new(0, 0.3, dist), center)
-        vp_cam.FieldOfView = 55
+    connect(UIS.InputEnded, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then espDrag = false end end)
+    round(viewport, 3)
+    stroke(viewport, Library.Theme.Stroke, 0.2)
+    local camera = Instance.new("Camera")
+    camera.CFrame = CFrame.new(Vector3.new(0, 2, 7), Vector3.new(0, 2, 0))
+    camera.Parent = viewport
+    viewport.CurrentCamera = camera
+    local overlay = new("Frame", {Parent = viewport, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ZIndex = 20})
+    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(125, 205), Position = UDim2.new(0.5, -62, 0.5, -93), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
+    stroke(box, Library.Theme.Accent, 0, 1)
+    local fill = new("Frame", {Parent = box, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Visible = false, ZIndex = 23})
+    local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 14), Position = UDim2.new(0.5, -95, 0.5, -124), BackgroundTransparency = 1, Text = "@EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 14), Position = UDim2.new(0.5, -95, 0.5, -111), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 9, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 116), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 130), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
+    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(3, 205), Position = UDim2.new(0.5, -72, 0.5, -93), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
+    local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
+    local healthGradient = new("UIGradient", {Parent = healthFill, Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(80, 255, 120), Color3.fromRGB(255, 80, 80))})
+    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(36, 12), Position = UDim2.new(0.5, -112, 0.5, -99), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 9, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
+    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(125, 205), Position = UDim2.new(0.5, -62, 0.5, -93), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
+    local skeletonLines = {}
+    local function skeletonLine(size, position)
+        local line = new("Frame", {Parent = skeleton, Size = size, Position = position, AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, ZIndex = 27})
+        round(line, 1)
+        skeletonLines[#skeletonLines + 1] = line
+        return line
     end
-
-    local overlay = new("Frame", {
-        Parent = frame,
-        Size = UDim2.new(1, -16, 1, -32),
-        Position = UDim2.fromOffset(8, 26),
-        BackgroundTransparency = 1,
-        ZIndex = 7,
-    })
-    overlay.ClipsDescendants = true
-
-    local box_frame = new("Frame", {
-        Parent = overlay, Size = UDim2.fromOffset(90, 160),
-        Position = UDim2.new(0.5, -45, 0.5, -80),
-        BackgroundTransparency = 1,
-        ZIndex = 8,
-    })
-    local function edge(anchor, pos, sz, thickness_dir)
-        local e = new("Frame", {Parent = box_frame, BorderSizePixel = 0, BackgroundColor3 = Color3.new(1,1,1), ZIndex = 8})
-        e.AnchorPoint = anchor
-        e.Position = pos
-        e.Size = sz
-        return e
+    skeletonLine(UDim2.fromOffset(2, 70), UDim2.fromScale(0.5, 0.42))
+    skeletonLine(UDim2.fromOffset(54, 2), UDim2.fromScale(0.5, 0.27))
+    skeletonLine(UDim2.fromOffset(42, 2), UDim2.fromScale(0.5, 0.55))
+    skeletonLine(UDim2.fromOffset(2, 54), UDim2.fromScale(0.32, 0.43))
+    skeletonLine(UDim2.fromOffset(2, 54), UDim2.fromScale(0.68, 0.43))
+    skeletonLine(UDim2.fromOffset(2, 58), UDim2.fromScale(0.4, 0.74))
+    skeletonLine(UDim2.fromOffset(2, 58), UDim2.fromScale(0.6, 0.74))
+    local healthCurrent = 1
+    local healthTarget = 1
+    local healthTop = Color3.fromRGB(80, 255, 120)
+    local healthBottom = Color3.fromRGB(255, 80, 80)
+    local healthAuto = true
+    local healthTweenId = 0
+    local function updateHealthCounter()
+        local ratio = math.clamp(healthFill.Size.Y.Scale, 0, 1)
+        healthCurrent = ratio
+        local tipColor = healthBottom:Lerp(healthTop, ratio)
+        healthText.Text = tostring(math.floor(ratio * 100 + 0.5))
+        healthText.TextColor3 = tipColor
+        healthText.Position = UDim2.new(0.5, -112, 0.5, -99 + (1 - ratio) * 205)
     end
-    local box_top = edge(Vector2.new(0,0), UDim2.new(0,0,0,0), UDim2.new(1,0,0,1))
-    local box_bot = edge(Vector2.new(0,1), UDim2.new(0,0,1,0), UDim2.new(1,0,0,1))
-    local box_left = edge(Vector2.new(0,0), UDim2.new(0,0,0,0), UDim2.new(0,1,1,0))
-    local box_right = edge(Vector2.new(1,0), UDim2.new(1,0,0,0), UDim2.new(0,1,1,0))
-    local box_lines = {box_top, box_bot, box_left, box_right}
-
-    local hp_outline = new("Frame", {Parent = overlay, BorderSizePixel = 0, BackgroundColor3 = Color3.new(0,0,0), ZIndex = 8})
-    local hp_bar = new("Frame", {Parent = overlay, BorderSizePixel = 0, BackgroundColor3 = Color3.fromRGB(90, 220, 90), ZIndex = 9})
-    local hp_text = new("TextLabel", {Parent = overlay, BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), TextSize = 10, ZIndex = 10, Text = "100/100"})
-
-    local function mk_text(name)
-        local t = new("TextLabel", {
-            Parent = overlay, BackgroundTransparency = 1,
-            TextColor3 = Color3.new(1,1,1), TextSize = 12,
-            Text = name, AutomaticSize = Enum.AutomaticSize.XY,
-            TextStrokeTransparency = 0.4,
-            ZIndex = 10, Visible = false,
-        })
-        return t
+    local function setHealthRatio(ratio, duration)
+        healthCurrent = math.clamp(ratio, 0, 1)
+        healthGradient.Color = ColorSequence.new(healthTop, healthBottom)
+        tween(healthFill, {Size = UDim2.new(1, 0, healthCurrent, 0)}, duration or 0.14)
+        updateHealthCounter()
     end
-    local name_l = mk_text("Player1")
-    local dname_l = mk_text("@Display")
-    local dist_l = mk_text("42m")
-    local weapon_l = mk_text("ADAR15")
-
-    local wicon_holder = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(24,24), BackgroundTransparency = 1, ZIndex = 10, Visible = false})
-    local wicon_img = new("ImageLabel", {Parent = wicon_holder, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Image = "", ZIndex = 11})
-
-    local elements = {
-        { key = "name",        obj = name_l,        holder = name_l,        default_slot = "top-center", label = "name" },
-        { key = "displayname", obj = dname_l,       holder = dname_l,       default_slot = "top-center", label = "display" },
-        { key = "distance",    obj = dist_l,        holder = dist_l,        default_slot = "bottom-center", label = "dist" },
-        { key = "weapon",      obj = weapon_l,      holder = weapon_l,      default_slot = "bottom-center", label = "weapon" },
-        { key = "weapon_icon", obj = wicon_holder,  holder = wicon_holder,  default_slot = "bottom-center", label = "icon" },
-    }
-    local elem_by_key = {}
-    for _, e in ipairs(elements) do elem_by_key[e.key] = e end
-
-    local hover_ring = new("Frame", {Parent = overlay, BorderSizePixel = 0, BackgroundTransparency = 1, ZIndex = 20, Visible = false, BackgroundColor3 = Color3.new(1,1,1)})
-    stroke(hover_ring, Color3.new(1,1,1), 0.2, 1)
-    round(hover_ring, 3)
-
-    local slot_ghost = new("Frame", {Parent = overlay, BorderSizePixel = 0, BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.7, ZIndex = 19, Visible = false})
-    round(slot_ghost, 4)
-
-    local function get_slot(key)
-        if es_ref and es_ref[key .. "_slot"] then return es_ref[key .. "_slot"] end
-        return elem_by_key[key].default_slot
-    end
-    local function set_slot(key, slot)
-        if es_ref then es_ref[key .. "_slot"] = slot end
-        if params.OnChange then pcall(params.OnChange, key, slot) end
-    end
-
-    local function box_rect()
-        local bp = box_frame.AbsolutePosition
-        local bs = box_frame.AbsoluteSize
-        return bp, bs
-    end
-
-    local function slot_anchor(slot)
-        local bp, bs = box_rect()
-        local op = overlay.AbsolutePosition
-        local left = bp.X - op.X
-        local top = bp.Y - op.Y
-        local right = left + bs.X
-        local bot = top + bs.Y
-        local cx = left + bs.X * 0.5
-        local cy = top + bs.Y * 0.5
-        local pad = 6
-        if slot == "top-left"       then return Vector2.new(left, top - pad), "up", "left" end
-        if slot == "top-center"     then return Vector2.new(cx, top - pad), "up", "center" end
-        if slot == "top-right"      then return Vector2.new(right, top - pad), "up", "right" end
-        if slot == "bottom-left"    then return Vector2.new(left, bot + pad), "down", "left" end
-        if slot == "bottom-center"  then return Vector2.new(cx, bot + pad), "down", "center" end
-        if slot == "bottom-right"   then return Vector2.new(right, bot + pad), "down", "right" end
-        if slot == "left-top"       then return Vector2.new(left - pad, top + bs.Y * 0.3), "side", "right-align" end
-        if slot == "left-bottom"    then return Vector2.new(left - pad, top + bs.Y * 0.7), "side", "right-align" end
-        if slot == "right-top"      then return Vector2.new(right + pad, top + bs.Y * 0.3), "side", "left-align" end
-        if slot == "right-bottom"   then return Vector2.new(right + pad, top + bs.Y * 0.7), "side", "left-align" end
-        return Vector2.new(cx, top - pad), "up", "center"
-    end
-
-    local SLOTS = {"top-left","top-center","top-right","bottom-left","bottom-center","bottom-right","left-top","left-bottom","right-top","right-bottom"}
-
-    local function place_elements()
-        local buckets = {}
-        for _, e in ipairs(elements) do
-            local slot = get_slot(e.key)
-            buckets[slot] = buckets[slot] or {}
-            buckets[slot][#buckets[slot] + 1] = e
+    task.spawn(function()
+        while frame.Parent do
+            if frame.Visible and healthBg.Visible then updateHealthCounter() end
+            task.wait(0.05)
         end
-        for slot, list in pairs(buckets) do
-            local anchor, dir = slot_anchor(slot)
-            local total_h = 0
-            local widths = {}
-            for _, e in ipairs(list) do
-                local h = (e.holder == wicon_holder) and 24 or (e.obj.TextBounds.Y > 0 and e.obj.TextBounds.Y or 14)
-                widths[e] = { w = (e.holder == wicon_holder) and 24 or (e.obj.TextBounds.X > 0 and e.obj.TextBounds.X or 40), h = h }
-                total_h = total_h + h + 2
-            end
-            local y
-            if dir == "up" then
-                y = anchor.Y - total_h
-            elseif dir == "down" then
-                y = anchor.Y
+    end)
+    task.spawn(function()
+        while frame.Parent do
+            if healthAuto and frame.Visible and healthBg.Visible then
+                healthTweenId += 1
+                setHealthRatio(0, 1.35)
+                task.wait(1.4)
+                if not healthAuto then continue end
+                setHealthRatio(1, 1.35)
+                task.wait(1.4)
             else
-                y = anchor.Y - total_h * 0.5
+                task.wait(0.25)
             end
-            for _, e in ipairs(list) do
-                local wh = widths[e]
-                local x
-                if slot == "left-top" or slot == "left-bottom" then
-                    x = anchor.X - wh.w
-                elseif slot == "right-top" or slot == "right-bottom" then
-                    x = anchor.X
-                elseif slot == "top-left" or slot == "bottom-left" then
-                    x = anchor.X
-                elseif slot == "top-right" or slot == "bottom-right" then
-                    x = anchor.X - wh.w
-                else
-                    x = anchor.X - wh.w * 0.5
+        end
+    end)
+    local highlight
+    function preview:SetVisibility(value)
+        preview.Visible = value == true
+        frame.Visible = preview.Visible and (not window or window.Main.Visible)
+    end
+    function preview:DockLeft()
+        dockLeft()
+    end
+    function preview:SetAutoDock(value)
+        preview.AutoDock = value ~= false
+        dockLeft()
+    end
+    function preview:SetText(value) title.Text = text(value) end
+    function preview:RemoveObject(object) if object then pcall(function() object:Destroy() end) end end
+    function preview:AddObject(object) if object then object.Parent = viewport end end
+    function preview:BuildFromModel(model)
+        if preview.Player then pcall(function() preview.Player:Destroy() end) end
+        if not model or not model.GetDescendants then return end
+        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso") or model:FindFirstChildWhichIsA("BasePart")
+        if not root then return end
+        local rootCFrame = root.CFrame
+        local viewmodel = Instance.new("Model")
+        viewmodel.Name = "PreviewModel"
+        local hum = model:FindFirstChildOfClass("Humanoid")
+        if hum then
+            local humClone = Instance.new("Humanoid")
+            humClone.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+            humClone.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+            humClone.Parent = viewmodel
+        end
+        for _, item in ipairs(model:GetChildren()) do
+            if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") then
+                local ok, cloneItem = pcall(function() return item:Clone() end)
+                if ok and cloneItem then cloneItem.Parent = viewmodel end
+            end
+        end
+        local base = CFrame.new(0, 1.75, 0) * CFrame.Angles(0, math.rad(180), 0)
+        local scale = 0.86
+        local function cleanPart(part)
+            for _, child in ipairs(part:GetDescendants()) do
+                if child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("Weld") or child:IsA("WeldConstraint") or child:IsA("Motor6D") or child:IsA("Attachment") or child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") or child:IsA("Smoke") or child:IsA("Fire") or child:IsA("Sparkles") or child:IsA("Sound") or child:IsA("BillboardGui") or child:IsA("SurfaceGui") or child:IsA("ProximityPrompt") or child:IsA("Highlight") or child:IsA("ForceField") then
+                    child:Destroy()
                 end
-                e.holder.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
-                if e.holder ~= wicon_holder then
-                    e.obj.Visible = true
-                else
-                    wicon_holder.Visible = true
-                    if es_ref and es_ref.weapon_icon_size then
-                        wicon_holder.Size = UDim2.fromOffset(es_ref.weapon_icon_size, es_ref.weapon_icon_size)
+            end
+            part.Anchored = true
+            part.CanCollide = false
+            part.CanTouch = false
+            part.CanQuery = false
+            part.CastShadow = false
+            part.Size = part.Size * scale
+        end
+        local clonedAccessories = {}
+        local count = 0
+        for _, item in ipairs(model:GetDescendants()) do
+            if item:IsA("Accoutrement") and not clonedAccessories[item] then
+                clonedAccessories[item] = true
+                local ok, acc = pcall(function() return item:Clone() end)
+                if ok and acc then
+                    for _, child in ipairs(acc:GetDescendants()) do
+                        if child:IsA("BasePart") then
+                            cleanPart(child)
+                            local original = item:FindFirstChild(child.Name, true)
+                            if original and original:IsA("BasePart") then
+                                local rel = rootCFrame:ToObjectSpace(original.CFrame)
+                                local relPos = rel.Position * scale
+                                local relRot = rel - rel.Position
+                                child.CFrame = base * CFrame.new(relPos) * relRot
+                            end
+                        elseif child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("Attachment") or child:IsA("Weld") or child:IsA("WeldConstraint") or child:IsA("Motor6D") then
+                            child:Destroy()
+                        end
                     end
+                    acc.Parent = viewmodel
+                    count += 1
                 end
-                y = y + wh.h + 2
-            end
-        end
-        for _, e in ipairs(elements) do
-            local visible = false
-            if e.key == "name" and (not es_ref or es_ref.realname) then visible = true end
-            if e.key == "displayname" and es_ref and es_ref.displayname then visible = true end
-            if e.key == "distance" and (not es_ref or es_ref.dist) then visible = true end
-            if e.key == "weapon" and es_ref and es_ref.weapon then visible = true end
-            if e.key == "weapon_icon" and es_ref and es_ref.weapon_icon then visible = true end
-            e.holder.Visible = visible
-        end
-    end
-
-    local function place_box_and_hp()
-        local bp = box_frame.AbsolutePosition
-        local bs = box_frame.AbsoluteSize
-        local op = overlay.AbsolutePosition
-        local left = bp.X - op.X
-        local top = bp.Y - op.Y
-        local right_edge = left + bs.X
-        local bot = top + bs.Y
-
-        local box_color = Color3.new(1,1,1)
-        if es_ref and type(es_ref.box_color) == "table" and es_ref.box_color[1] then box_color = es_ref.box_color[1] end
-        for _, ln in ipairs(box_lines) do ln.BackgroundColor3 = box_color end
-        local box_visible = (not es_ref) or es_ref.box
-        for _, ln in ipairs(box_lines) do ln.Visible = box_visible end
-
-        local h_enabled = (not es_ref) or es_ref.health
-        if h_enabled then
-            local th = (es_ref and es_ref.health_thickness) or 3
-            local ratio = 1
-            local x = left - 6 - th
-            hp_outline.Size = UDim2.fromOffset(th + 2, bs.Y + 2)
-            hp_outline.Position = UDim2.fromOffset(x - 1, top - 1)
-            hp_outline.Visible = true
-            hp_bar.Size = UDim2.fromOffset(th, math.floor(bs.Y * ratio))
-            hp_bar.Position = UDim2.fromOffset(x, top + bs.Y - math.floor(bs.Y * ratio))
-            hp_bar.BackgroundColor3 = (es_ref and es_ref.health_color_top) or Color3.fromRGB(90, 220, 90)
-            hp_bar.Visible = true
-            hp_text.Visible = (es_ref and es_ref.hp_counter_enabled) ~= false
-            if hp_text.Visible then
-                hp_text.Text = "100/100"
-                hp_text.Position = UDim2.fromOffset(x - 34, top)
-                hp_text.Size = UDim2.fromOffset(30, 12)
-                hp_text.TextXAlignment = Enum.TextXAlignment.Right
-            end
-        else
-            hp_outline.Visible = false; hp_bar.Visible = false; hp_text.Visible = false
-        end
-    end
-
-    local dock_conn
-    local function dock()
-        if not window or not window.Main or not frame.Parent then return end
-        local mp = window.Main.AbsolutePosition
-        local ms = window.Main.AbsoluteSize
-        frame.Position = UDim2.fromOffset(mp.X + ms.X + 12, mp.Y + math.max(0, (ms.Y - H) * 0.5))
-    end
-
-    local rs_conn = connect(RunService.RenderStepped, function()
-        frame_dummy()
-        place_box_and_hp()
-        place_elements()
-        dock()
-    end)
-
-    -- Drag & drop by slots
-    local dragging = nil
-    local drag_start_slot = nil
-    local UIS_svc = UIS
-    local function closest_slot(mouse_pos)
-        local best, best_d = nil, math.huge
-        for _, s in ipairs(SLOTS) do
-            local anchor = slot_anchor(s)
-            local op = overlay.AbsolutePosition
-            local ax = op.X + anchor.X
-            local ay = op.Y + anchor.Y
-            local dx = ax - mouse_pos.X
-            local dy = ay - mouse_pos.Y
-            local d = dx * dx + dy * dy
-            if d < best_d then best_d = d; best = s end
-        end
-        return best
-    end
-    local function elem_at(mouse_pos)
-        for _, e in ipairs(elements) do
-            if e.holder.Visible then
-                local hp = e.holder.AbsolutePosition
-                local hs = e.holder.AbsoluteSize
-                if mouse_pos.X >= hp.X and mouse_pos.X <= hp.X + hs.X and mouse_pos.Y >= hp.Y and mouse_pos.Y <= hp.Y + hs.Y then
-                    return e
+            elseif item:IsA("BasePart") and not item:FindFirstAncestorWhichIsA("Accoutrement") and item.Name ~= "HumanoidRootPart" then
+                local ok, part = pcall(function() return item:Clone() end)
+                if ok and part then
+                    cleanPart(part)
+                    local rel = rootCFrame:ToObjectSpace(item.CFrame)
+                    local relPos = rel.Position * scale
+                    local relRot = rel - rel.Position
+                    part.CFrame = base * CFrame.new(relPos) * relRot
+                    part.Parent = viewmodel
+                    count += 1
                 end
             end
+            if count >= 120 then break end
         end
-        return nil
+        if count == 0 then viewmodel:Destroy() return end
+        viewmodel.Parent = viewport
+        preview.Player = viewmodel
+        camera.CFrame = CFrame.new(Vector3.new(0, 2.1, 6.9), Vector3.new(0, 2, 0))
     end
-    local function show_ring(e)
-        if not e then hover_ring.Visible = false; return end
-        local op = overlay.AbsolutePosition
-        local hp = e.holder.AbsolutePosition
-        local hs = e.holder.AbsoluteSize
-        hover_ring.Position = UDim2.fromOffset(hp.X - op.X - 3, hp.Y - op.Y - 3)
-        hover_ring.Size = UDim2.fromOffset(hs.X + 6, hs.Y + 6)
-        hover_ring.BackgroundTransparency = 1
-        hover_ring.Visible = true
+    function preview:SetBox(visible, color, fillVisible, fillColor)
+        box.Visible = visible == true
+        box.UIStroke.Color = colorValue(color, Library.Theme.Accent)
+        fill.Visible = fillVisible == true
+        fill.BackgroundColor3 = colorValue(fillColor, colorValue(color, Library.Theme.Accent))
     end
-    local function show_ghost(slot)
-        if not slot then slot_ghost.Visible = false; return end
-        local anchor = slot_anchor(slot)
-        local op = overlay.AbsolutePosition
-        local gx = anchor.X - 24
-        local gy = anchor.Y - 8
-        slot_ghost.Position = UDim2.fromOffset(gx, gy)
-        slot_ghost.Size = UDim2.fromOffset(48, 16)
-        slot_ghost.Visible = true
+    function preview:SetName(visible, color, value, displayVisible, displayColor, displayValue)
+        name.Visible = visible == true
+        name.TextColor3 = colorValue(color, Library.Theme.Text)
+        if value then name.Text = tostring(value) end
+        displayName.Visible = displayVisible == true
+        displayName.TextColor3 = colorValue(displayColor, colorValue(color, Library.Theme.Text))
+        if displayValue then displayName.Text = tostring(displayValue) end
     end
+    function preview:SetHealth(visible, value, topColor, bottomColor, counterVisible)
+        local show = visible == true
+        healthBg.Visible = show
+        healthText.Visible = show and counterVisible == true
+        local numeric = tonumber(value) or healthTarget
+        if numeric > 1 then numeric = numeric / 100 end
+        healthTarget = math.clamp(numeric, 0, 1)
+        healthTop = colorValue(topColor, colorValue(bottomColor, healthTop))
+        healthBottom = colorValue(bottomColor, healthBottom)
+        if not healthAuto then setHealthRatio(healthTarget, 0.18) end
+    end
+    function preview:SetHealthCounter(visible)
+        healthText.Visible = healthBg.Visible and visible == true
+    end
+    function preview:SetAutoHealthAnimation(value)
+        healthAuto = value ~= false
+    end
+    function preview:SetDistance(visible, color, value)
+        distance.Visible = visible == true
+        distance.TextColor3 = colorValue(color, Library.Theme.Text)
+        if value then distance.Text = tostring(value) end
+    end
+    function preview:SetWeapon(visible, color, value)
+        weapon.Visible = visible == true
+        weapon.TextColor3 = colorValue(color, Library.Theme.Text)
+        if value then weapon.Text = tostring(value) end
+    end
+    function preview:SetSkeleton()
+        skeleton.Visible = false
+        for _, line in ipairs(skeletonLines) do line.Visible = false end
+    end
+    function preview:SetChams(visible, fillColor, outlineEnabled, outlineColor)
+        if not preview.Player then return end
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.Parent = viewport
+        end
+        if typeof(outlineEnabled) == "Color3" or type(outlineEnabled) == "table" then
+            outlineColor = outlineEnabled
+            outlineEnabled = true
+        end
+        highlight.Adornee = preview.Player
+        highlight.Enabled = visible == true
+        highlight.FillColor = colorValue(fillColor, Library.Theme.Accent)
+        highlight.OutlineColor = colorValue(outlineColor, Color3.new(1, 1, 1))
+        highlight.OutlineTransparency = outlineEnabled == false and 1 or 0
+    end
+    preview.Items.Frame = frame
+    preview.Viewport = viewport
+    preview.ViewportCamera = camera
+    preview.Frame = frame
+    preview.Visible = true
+    if window then window.ESPPreviewObject = preview end
+    task.defer(function()
+        if LocalPlayer.Character then preview:BuildFromModel(LocalPlayer.Character) end
+    end)
+    connect(LocalPlayer.CharacterAdded, function(character)
+        task.wait(1)
+        if preview.Frame and preview.Frame.Parent then preview:BuildFromModel(character) end
+    end)
 
-    local hover_conn = connect(UIS.InputChanged, function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-        local mp = Vector2.new(input.Position.X, input.Position.Y)
-        if dragging then
-            local slot = closest_slot(mp)
-            show_ghost(slot)
-        else
-            local op = overlay.AbsolutePosition
-            local os_ = overlay.AbsoluteSize
-            if mp.X < op.X or mp.Y < op.Y or mp.X > op.X + os_.X or mp.Y > op.Y + os_.Y then
-                hover_ring.Visible = false
-                return
-            end
-            local e = elem_at(mp)
-            show_ring(e)
+    local es_ref = params.Settings
+    function preview:SetSettings(t) es_ref = t end
+    function preview:SetOnChange(fn) end
+    function preview:UpdateFromSettings()
+        local es = es_ref
+        if not es then return end
+        pcall(function()
+            if preview.SetBox then preview:SetBox(es.box, es.box_color, es.box_fill, es.box_fill_color) end
+            if preview.SetName then preview:SetName(es.realname, es.realname_color, "@EnemyPlayer", es.displayname, es.displayname_color, "EnemyPlayer") end
+            if preview.SetHealth then preview:SetHealth(es.health, 100, es.health_color_top, es.health_color_bottom, es.hp_counter_enabled ~= false) end
+            if preview.SetDistance then preview:SetDistance(es.dist, es.dist_color, "15m") end
+            if preview.SetWeapon then preview:SetWeapon(es.weapon, es.weapon_color, "AKM") end
+            if preview.SetSkeleton then preview:SetSkeleton(es.skeleton, es.skeleton_color) end
+            if preview.SetChams then preview:SetChams(es.chams, {es.chams_hidden_color, es.chams_hidden_transparency or 0.5}, true, {Color3.new(0,0,0), 0}, "Neon", false) end
+        end)
+    end
+    task.spawn(function()
+        while preview.Frame and preview.Frame.Parent do
+            preview:UpdateFromSettings()
+            task.wait(0.2)
         end
     end)
 
-    local down_conn = connect(UIS.InputBegan, function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        local mp = Vector2.new(input.Position.X, input.Position.Y)
-        local e = elem_at(mp)
-        if not e then return end
-        dragging = e
-        drag_start_slot = get_slot(e.key)
-        hover_ring.Visible = true
-        hover_ring.BackgroundColor3 = Library.Theme.Accent
-        hover_ring.BackgroundTransparency = 0.75
-    end)
-    local up_conn = connect(UIS.InputEnded, function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        if not dragging then return end
-        local mp = Vector2.new(input.Position.X, input.Position.Y)
-        local slot = closest_slot(mp)
-        if slot and slot ~= drag_start_slot then
-            set_slot(dragging.key, slot)
-        end
-        dragging = nil
-        drag_start_slot = nil
-        slot_ghost.Visible = false
-        hover_ring.Visible = false
-    end)
-
-    local object = {
-        Frame = frame,
-        Visible = false,
-    }
-    function object:SetVisibility(v)
-        object.Visible = v == true
-        frame.Visible = object.Visible
-    end
-    function object:SetSettings(t)
-        es_ref = t
-    end
-    function object:SetOnChange(fn)
-        params.OnChange = fn
-    end
-    function object:Destroy()
-        if rs_conn then rs_conn:Disconnect() end
-        if hover_conn then hover_conn:Disconnect() end
-        if down_conn then down_conn:Disconnect() end
-        if up_conn then up_conn:Disconnect() end
-        if frame and frame.Parent then frame:Destroy() end
-    end
-    if window then window.ESPPreviewObject = object end
-    return object
+    return preview
 end
 
 function Library:TargetIndicator()
