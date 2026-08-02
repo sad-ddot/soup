@@ -1869,6 +1869,13 @@ function Library:EspPreview(params)
         for _, items in pairs(groups) do
             table.sort(items, function(a, b) return get_order(a.key) < get_order(b.key) end)
         end
+        local function apply_align(o, align)
+            if o:IsA("TextLabel") or o:IsA("TextButton") or o:IsA("TextBox") then
+                o.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
+                    or (align == "left" and Enum.TextXAlignment.Left)
+                    or Enum.TextXAlignment.Center
+            end
+        end
         for slot, items in pairs(groups) do
             local ax, ay, dir, align = slot_anchor(slot)
             local y = ay
@@ -1876,29 +1883,25 @@ function Library:EspPreview(params)
                 for i = #items, 1, -1 do
                     local it = items[i]
                     local h = math.max(it.obj.AbsoluteSize.Y, it.obj.TextSize or 12)
-                    local w = math.max(it.obj.AbsoluteSize.X, 40)
+                    local w = math.max(it.obj.AbsoluteSize.X, 22)
                     y = y - h - 1
                     local x
                     if align == "left" then x = ax
                     elseif align == "right" then x = ax - w
                     else x = ax - w * 0.5 end
                     it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
-                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
-                        or (align == "left" and Enum.TextXAlignment.Left)
-                        or Enum.TextXAlignment.Center
+                    apply_align(it.obj, align)
                 end
             else
                 for _, it in ipairs(items) do
                     local h = math.max(it.obj.AbsoluteSize.Y, it.obj.TextSize or 12)
-                    local w = math.max(it.obj.AbsoluteSize.X, 40)
+                    local w = math.max(it.obj.AbsoluteSize.X, 22)
                     local x
                     if align == "left" then x = ax
                     elseif align == "right" then x = ax - w
                     else x = ax - w * 0.5 end
                     it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
-                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
-                        or (align == "left" and Enum.TextXAlignment.Left)
-                        or Enum.TextXAlignment.Center
+                    apply_align(it.obj, align)
                     y = y + h + 1
                 end
             end
