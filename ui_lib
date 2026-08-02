@@ -1779,9 +1779,8 @@ function Library:EspPreview(params)
         { key = "weapon",      obj = weapon,      default = "bottom-center" },
     }
     local slot_keys = {
-        "top-left", "top-center", "top-right",
-        "bottom-left", "bottom-center", "bottom-right",
-        "left-top", "left-bottom",
+        "top-center",
+        "bottom-center",
         "right-top", "right-bottom",
     }
 
@@ -1822,6 +1821,40 @@ function Library:EspPreview(params)
         return bx, by, 1, "left"
     end
 
+    local function get_order(key)
+        local es = preview._settings
+        if es then
+            local v = tonumber(es[key .. "_order"])
+            if v then return v end
+        end
+        for i, it in ipairs(slot_items) do if it.key == key then return i end end
+        return 99
+    end
+
+    local function set_order(key, order)
+        local es = preview._settings
+        if es then es[key .. "_order"] = order end
+        if preview._on_change then pcall(preview._on_change, key, nil, order) end
+    end
+
+    local function normalize_orders()
+        local es = preview._settings
+        if not es then return end
+        local by_slot = {}
+        for _, it in ipairs(slot_items) do
+            local s = get_slot(it.key)
+            by_slot[s] = by_slot[s] or {}
+            by_slot[s][#by_slot[s] + 1] = it
+        end
+        for _, items in pairs(by_slot) do
+            table.sort(items, function(a, b) return get_order(a.key) < get_order(b.key) end)
+            for i, it in ipairs(items) do
+                es[it.key .. "_order"] = i
+                if preview._on_change then pcall(preview._on_change, it.key, nil, i) end
+            end
+        end
+    end
+
     local function place_by_slot()
         local groups = {}
         for _, it in ipairs(slot_items) do
@@ -1830,6 +1863,9 @@ function Library:EspPreview(params)
                 groups[s] = groups[s] or {}
                 groups[s][#groups[s] + 1] = it
             end
+        end
+        for _, items in pairs(groups) do
+            table.sort(items, function(a, b) return get_order(a.key) < get_order(b.key) end)
         end
         for slot, items in pairs(groups) do
             local ax, ay, dir, align = slot_anchor(slot)
@@ -1949,6 +1985,25 @@ function Library:EspPreview(params)
         local slot = closest_slot(mp)
         if slot then
             set_slot(dragging.key, slot)
+            local neighbors = {}
+            for _, it in ipairs(slot_items) do
+                if it ~= dragging and it.obj.Visible and get_slot(it.key) == slot then
+                    neighbors[#neighbors + 1] = it
+                end
+            end
+            table.sort(neighbors, function(a, b) return get_order(a.key) < get_order(b.key) end)
+            local new_order = (#neighbors > 0 and get_order(neighbors[#neighbors].key) + 1) or 1
+            for i, it in ipairs(neighbors) do
+                local hp = it.obj.AbsolutePosition
+                local hs = it.obj.AbsoluteSize
+                local mid_y = hp.Y + hs.Y * 0.5
+                if mp.Y < mid_y then
+                    new_order = get_order(it.key) - 0.5
+                    break
+                end
+            end
+            set_order(dragging.key, new_order)
+            normalize_orders()
         end
         dragging = nil
         place_by_slot()
