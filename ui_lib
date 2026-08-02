@@ -34,7 +34,8 @@ local Library = {
         Dim = Color3.fromRGB(139, 139, 139),
         Bad = Color3.fromRGB(220, 80, 85),
         Risky = Color3.fromRGB(220, 80, 85),
-        RiskyText = Color3.fromRGB(255, 220, 70),
+        RiskyText = Color3.fromRGB(255, 60, 60),
+        UnstableText = Color3.fromRGB(255, 210, 70),
     },
 }
 
@@ -661,8 +662,15 @@ function SectionMethods:Checkbox(name, default, callback, style)
     local flag = name
     local value = default == true
     style = style or {}
-    local risky = style.Risky == true or style.Unstable == true or style.Risk == true
-    local riskyColor = style.Color or Library.Theme.RiskyText or Color3.fromRGB(255, 220, 70)
+    local risky = style.Risky == true or style.Risk == true or style.Unstable == true
+    local riskyColor
+    if style.Color then
+        riskyColor = style.Color
+    elseif style.Risky == true or style.Risk == true then
+        riskyColor = Library.Theme.RiskyText or Color3.fromRGB(255, 60, 60)
+    else
+        riskyColor = Library.Theme.UnstableText or Color3.fromRGB(255, 210, 70)
+    end
     local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Text = "", AutoButtonColor = false}, self.Body)
     local box = new("Frame", {Size = UDim2.fromOffset(13, 13), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 8}, row)
     round(box, 2)
@@ -745,7 +753,7 @@ function SectionMethods:Toggle(data)
     local control = self:Checkbox(data.Name or flag, data.Default == true, function(value)
         Library.Flags[flag] = value
         Library:SafeCall(data.Callback, value)
-    end, {Risky = data.Risky == true or data.Unstable == true or data.Risk == true, Color = data.RiskyColor})
+    end, {Risky = data.Risky == true or data.Risk == true, Unstable = data.Unstable == true, Color = data.RiskyColor})
     Library.Flags[flag] = data.Default == true
     Library.SetFlags[flag] = function(value) control:Set(value) end
     local sectionWindow = self.Window
