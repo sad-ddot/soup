@@ -1758,6 +1758,234 @@ function Library:EspPreview(params)
             end
         end
     end)
+    local slot_items = {
+        { key = "name",        obj = name,        default = "top-left"     },
+        { key = "displayname", obj = displayName, default = "top-left"     },
+        { key = "distance",    obj = distance,    default = "bottom-left"  },
+        { key = "weapon",      obj = weapon,      default = "bottom-left"  },
+    }
+    local slot_keys = { "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right" }
+
+    local function box_metrics()
+        local bp = box.AbsolutePosition
+        local bs = box.AbsoluteSize
+        local op = overlay.AbsolutePosition
+        return bp.X - op.X, bp.Y - op.Y, bs.X, bs.Y
+    end
+
+    local function slot_anchor(slot)
+        local bx, by, bw, bh = box_metrics()
+        local right = bx + bw
+        local bot = by + bh
+        local cx = bx + bw * 0.5
+        local pad = 4
+        if slot == "top-left"      then return bx, by - pad, "up",   "left"   end
+        if slot == "top-center"    then return cx, by - pad, "up",   "center" end
+        if slot == "top-right"     then return right, by - pad, "up",   "right"  end
+        if slot == "bottom-left"   then return bx, bot + pad, "down", "left"   end
+        if slot == "bottom-center" then return cx, bot + pad, "down", "center" end
+        if slot == "bottom-right"  then return right, bot + pad, "down", "right"  end
+        return cx, by - pad, "up", "center"
+    end
+
+    local function get_slot(key)
+        local es = preview._settings
+        if es and es[key .. "_slot"] then return es[key .. "_slot"] end
+        for _, it in ipairs(slot_items) do if it.key == key then return it.default end end
+        return "top-left"
+    end
+
+    local function set_slot(key, slot)
+        local es = preview._settings
+        if es then es[key .. "_slot"] = slot end
+        if preview._on_change then pcall(preview._on_change, key, slot) end
+    end
+
+    local slot_zones = {}
+    for _, slot in ipairs(slot_keys) do
+        local zone = new("Frame", {
+            Parent = overlay,
+            BackgroundColor3 = Color3.new(1, 1, 1),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 22,
+        })
+        stroke(zone, Color3.new(1, 1, 1), 0.4, 1)
+        round(zone, 3)
+        slot_zones[slot] = zone
+    end
+
+    local function zone_rect(slot)
+        local bx, by, bw, bh = box_metrics()
+        local zw, zh = 60, 16
+        local right = bx + bw
+        local bot = by + bh
+        local cx = bx + bw * 0.5
+        local pad = 4
+        if slot == "top-left"      then return bx, by - pad - zh, zw, zh end
+        if slot == "top-center"    then return cx - zw * 0.5, by - pad - zh, zw, zh end
+        if slot == "top-right"     then return right - zw, by - pad - zh, zw, zh end
+        if slot == "bottom-left"   then return bx, bot + pad, zw, zh end
+        if slot == "bottom-center" then return cx - zw * 0.5, bot + pad, zw, zh end
+        if slot == "bottom-right"  then return right - zw, bot + pad, zw, zh end
+        return 0, 0, 0, 0
+    end
+
+    local function refresh_zones(show_all, highlight_slot)
+        for slot, zone in pairs(slot_zones) do
+            local zx, zy, zw, zh = zone_rect(slot)
+            zone.Position = UDim2.fromOffset(zx, zy)
+            zone.Size = UDim2.fromOffset(zw, zh)
+            if show_all then
+                zone.Visible = true
+                if slot == highlight_slot then
+                    zone.BackgroundTransparency = 0.55
+                    zone.UIStroke.Transparency = 0
+                else
+                    zone.BackgroundTransparency = 0.85
+                    zone.UIStroke.Transparency = 0.4
+                end
+            else
+                zone.Visible = false
+            end
+        end
+    end
+
+    local function place_by_slot()
+        local groups = {}
+        for _, it in ipairs(slot_items) do
+            local slot = get_slot(it.key)
+            groups[slot] = groups[slot] or {}
+            groups[slot][#groups[slot] + 1] = it
+        end
+        for slot, items in pairs(groups) do
+            local ax, ay, dir, align = slot_anchor(slot)
+            local y = ay
+            if dir == "up" then
+                for i = #items, 1, -1 do
+                    local it = items[i]
+                    local h = it.obj.AbsoluteSize.Y > 0 and it.obj.AbsoluteSize.Y or 14
+                    y = y - h - 1
+                    local w = it.obj.AbsoluteSize.X > 0 and it.obj.AbsoluteSize.X or 60
+                    local x
+                    if align == "left" then x = ax
+                    elseif align == "right" then x = ax - w
+                    else x = ax - w * 0.5 end
+                    it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
+                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
+                        or (align == "left" and Enum.TextXAlignment.Left)
+                        or Enum.TextXAlignment.Center
+                end
+            else
+                for _, it in ipairs(items) do
+                    local h = it.obj.AbsoluteSize.Y > 0 and it.obj.AbsoluteSize.Y or 14
+                    local w = it.obj.AbsoluteSize.X > 0 and it.obj.AbsoluteSize.X or 60
+                    local x
+                    if align == "left" then x = ax
+                    elseif align == "right" then x = ax - w
+                    else x = ax - w * 0.5 end
+                    it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
+                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
+                        or (align == "left" and Enum.TextXAlignment.Left)
+                        or Enum.TextXAlignment.Center
+                    y = y + h + 1
+                end
+            end
+        end
+    end
+
+    local hover_ring = new("Frame", {
+        Parent = overlay, BackgroundTransparency = 1, BorderSizePixel = 0,
+        Visible = false, ZIndex = 23,
+    })
+    stroke(hover_ring, Color3.new(1, 1, 1), 0.2, 1)
+    round(hover_ring, 3)
+
+    local function elem_at(mp)
+        for _, it in ipairs(slot_items) do
+            if it.obj.Visible then
+                local hp = it.obj.AbsolutePosition
+                local hs = it.obj.AbsoluteSize
+                if mp.X >= hp.X - 3 and mp.X <= hp.X + hs.X + 3 and mp.Y >= hp.Y - 3 and mp.Y <= hp.Y + hs.Y + 3 then
+                    return it
+                end
+            end
+        end
+        return nil
+    end
+
+    local function closest_slot(mp)
+        local op = overlay.AbsolutePosition
+        local best, best_d = nil, math.huge
+        for _, slot in ipairs(slot_keys) do
+            local ax, ay = slot_anchor(slot)
+            local dx = op.X + ax - mp.X
+            local dy = op.Y + ay - mp.Y
+            local d = dx * dx + dy * dy
+            if d < best_d then best_d = d; best = slot end
+        end
+        return best
+    end
+
+    local dragging = nil
+    connect(UIS.InputChanged, function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+        local mp = Vector2.new(input.Position.X, input.Position.Y)
+        local op = overlay.AbsolutePosition
+        local os_ = overlay.AbsoluteSize
+        local inside = mp.X >= op.X and mp.Y >= op.Y and mp.X <= op.X + os_.X and mp.Y <= op.Y + os_.Y
+        if dragging then
+            local slot = closest_slot(mp)
+            refresh_zones(true, slot)
+        elseif inside then
+            local e = elem_at(mp)
+            if e then
+                local hp = e.obj.AbsolutePosition
+                local hs = e.obj.AbsoluteSize
+                hover_ring.Position = UDim2.fromOffset(hp.X - op.X - 3, hp.Y - op.Y - 3)
+                hover_ring.Size = UDim2.fromOffset(hs.X + 6, hs.Y + 6)
+                hover_ring.Visible = true
+                refresh_zones(true, nil)
+            else
+                hover_ring.Visible = false
+                refresh_zones(false)
+            end
+        else
+            hover_ring.Visible = false
+            refresh_zones(false)
+        end
+    end)
+    connect(UIS.InputBegan, function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        local mp = Vector2.new(input.Position.X, input.Position.Y)
+        local e = elem_at(mp)
+        if not e then return end
+        dragging = e
+        hover_ring.UIStroke.Color = Library.Theme.Accent
+        refresh_zones(true, get_slot(e.key))
+    end)
+    connect(UIS.InputEnded, function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        if not dragging then return end
+        local mp = Vector2.new(input.Position.X, input.Position.Y)
+        local slot = closest_slot(mp)
+        if slot then
+            set_slot(dragging.key, slot)
+            place_by_slot()
+        end
+        dragging = nil
+        hover_ring.UIStroke.Color = Color3.new(1, 1, 1)
+        hover_ring.Visible = false
+        refresh_zones(false)
+    end)
+    task.spawn(function()
+        while frame.Parent do
+            if frame.Visible then place_by_slot() end
+            task.wait(0.05)
+        end
+    end)
+
     local highlight
     function preview:SetVisibility(value)
         preview.Visible = value == true
@@ -1928,11 +2156,12 @@ function Library:EspPreview(params)
         if preview.Frame and preview.Frame.Parent then preview:BuildFromModel(character) end
     end)
 
-    local es_ref = params.Settings
-    function preview:SetSettings(t) es_ref = t end
-    function preview:SetOnChange(fn) end
+    preview._settings = params.Settings
+    preview._on_change = params.OnChange
+    function preview:SetSettings(t) preview._settings = t end
+    function preview:SetOnChange(fn) preview._on_change = fn end
     function preview:UpdateFromSettings()
-        local es = es_ref
+        local es = preview._settings
         if not es then return end
         pcall(function()
             if preview.SetBox then preview:SetBox(es.box, es.box_color, es.box_fill, es.box_fill_color) end
