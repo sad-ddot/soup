@@ -1651,40 +1651,16 @@ function Library:EspPreview(params)
     local parent = window and window.Gui or getParent()
     local preview = {Player = nil, Items = {}, AutoDock = true}
     local frame = makeWidget(parent, "ESPPreview", UDim2.fromOffset(860, 430), UDim2.fromOffset(258, 334))
-    local lastDock = -1
-    local function dockLeft()
-        if not preview.AutoDock or not window or not window.Main or not frame.Parent then return end
-        local now = os.clock()
-        if now - lastDock < 0.08 then return end
-        lastDock = now
+    local function dockRight()
+        if not window or not window.Main or not frame.Parent then return end
         local p = window.Main.AbsolutePosition
-        local s = frame.AbsoluteSize
-        frame.Position = UDim2.fromOffset(math.max(4, p.X - s.X - 12), p.Y + 56)
+        local s = window.Main.AbsoluteSize
+        frame.Position = UDim2.fromOffset(p.X + s.X + 12, p.Y + 40)
     end
-    dockLeft()
+    dockRight()
+    connect(RunService.RenderStepped, dockRight)
     local title = new("TextLabel", {Parent = frame, Size = UDim2.new(1, -18, 0, 18), Position = UDim2.fromOffset(9, 5), BackgroundTransparency = 1, Text = params.Name or params.name or "ESP Preview", TextColor3 = Library.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left})
-    connect(frame.InputBegan, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then preview.AutoDock = false end end)
-    connect(title.InputBegan, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then preview.AutoDock = false end end)
     local viewport = new("ViewportFrame", {Parent = frame, Size = UDim2.new(1, -20, 1, -48), Position = UDim2.fromOffset(10, 30), BackgroundColor3 = Color3.fromRGB(12, 13, 15), BorderSizePixel = 0, Ambient = Color3.fromRGB(180, 180, 180), LightColor = Color3.fromRGB(255, 255, 255), Active = true})
-    local espDrag, espDragStart, espStartPos
-    local function espDragBegin(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            preview.AutoDock = false
-            espDrag = true
-            espDragStart = input.Position
-            espStartPos = frame.Position
-        end
-    end
-    connect(frame.InputBegan, espDragBegin)
-    connect(title.InputBegan, espDragBegin)
-    connect(viewport.InputBegan, espDragBegin)
-    connect(UIS.InputChanged, function(input)
-        if espDrag and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - espDragStart
-            frame.Position = UDim2.new(espStartPos.X.Scale, espStartPos.X.Offset + delta.X, espStartPos.Y.Scale, espStartPos.Y.Offset + delta.Y)
-        end
-    end)
-    connect(UIS.InputEnded, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then espDrag = false end end)
     round(viewport, 3)
     stroke(viewport, Library.Theme.Stroke, 0.2)
     local camera = Instance.new("Camera")
@@ -1811,8 +1787,6 @@ function Library:EspPreview(params)
             Visible = false,
             ZIndex = 22,
         })
-        stroke(zone, Color3.new(1, 1, 1), 0.4, 1)
-        round(zone, 3)
         slot_zones[slot] = zone
     end
 
@@ -1832,22 +1806,27 @@ function Library:EspPreview(params)
         return 0, 0, 0, 0
     end
 
-    local function refresh_zones(show_all, highlight_slot)
+    local function refresh_zones(mode, active_slot, only_slot)
         for slot, zone in pairs(slot_zones) do
             local zx, zy, zw, zh = zone_rect(slot)
             zone.Position = UDim2.fromOffset(zx, zy)
             zone.Size = UDim2.fromOffset(zw, zh)
-            if show_all then
-                zone.Visible = true
-                if slot == highlight_slot then
-                    zone.BackgroundTransparency = 0.55
-                    zone.UIStroke.Transparency = 0
-                else
-                    zone.BackgroundTransparency = 0.85
-                    zone.UIStroke.Transparency = 0.4
-                end
-            else
+            if mode == "hidden" then
                 zone.Visible = false
+            elseif mode == "single" then
+                if slot == only_slot then
+                    zone.Visible = true
+                    zone.BackgroundTransparency = 0.65
+                else
+                    zone.Visible = false
+                end
+            elseif mode == "all" then
+                zone.Visible = true
+                if slot == active_slot then
+                    zone.BackgroundTransparency = 0.4
+                else
+                    zone.BackgroundTransparency = 0.82
+                end
             end
         end
     end
@@ -1895,13 +1874,6 @@ function Library:EspPreview(params)
         end
     end
 
-    local hover_ring = new("Frame", {
-        Parent = overlay, BackgroundTransparency = 1, BorderSizePixel = 0,
-        Visible = false, ZIndex = 23,
-    })
-    stroke(hover_ring, Color3.new(1, 1, 1), 0.2, 1)
-    round(hover_ring, 3)
-
     local function elem_at(mp)
         for _, it in ipairs(slot_items) do
             if it.obj.Visible then
@@ -1937,23 +1909,16 @@ function Library:EspPreview(params)
         local inside = mp.X >= op.X and mp.Y >= op.Y and mp.X <= op.X + os_.X and mp.Y <= op.Y + os_.Y
         if dragging then
             local slot = closest_slot(mp)
-            refresh_zones(true, slot)
+            refresh_zones("all", slot)
         elseif inside then
             local e = elem_at(mp)
             if e then
-                local hp = e.obj.AbsolutePosition
-                local hs = e.obj.AbsoluteSize
-                hover_ring.Position = UDim2.fromOffset(hp.X - op.X - 3, hp.Y - op.Y - 3)
-                hover_ring.Size = UDim2.fromOffset(hs.X + 6, hs.Y + 6)
-                hover_ring.Visible = true
-                refresh_zones(true, nil)
+                refresh_zones("single", nil, get_slot(e.key))
             else
-                hover_ring.Visible = false
-                refresh_zones(false)
+                refresh_zones("hidden")
             end
         else
-            hover_ring.Visible = false
-            refresh_zones(false)
+            refresh_zones("hidden")
         end
     end)
     connect(UIS.InputBegan, function(input)
@@ -1962,8 +1927,7 @@ function Library:EspPreview(params)
         local e = elem_at(mp)
         if not e then return end
         dragging = e
-        hover_ring.UIStroke.Color = Library.Theme.Accent
-        refresh_zones(true, get_slot(e.key))
+        refresh_zones("all", get_slot(e.key))
     end)
     connect(UIS.InputEnded, function(input)
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
@@ -1975,9 +1939,7 @@ function Library:EspPreview(params)
             place_by_slot()
         end
         dragging = nil
-        hover_ring.UIStroke.Color = Color3.new(1, 1, 1)
-        hover_ring.Visible = false
-        refresh_zones(false)
+        refresh_zones("hidden")
     end)
     task.spawn(function()
         while frame.Parent do
