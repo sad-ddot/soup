@@ -1668,19 +1668,27 @@ function Library:EspPreview(params)
     camera.Parent = viewport
     viewport.CurrentCamera = camera
     local overlay = new("Frame", {Parent = viewport, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ZIndex = 20})
-    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(125, 205), Position = UDim2.new(0.5, -62, 0.5, -93), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
+
+    local BOX_W, BOX_H = 125, 205
+    local box = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(BOX_W, BOX_H), Position = UDim2.new(0.5, -math.floor(BOX_W/2), 0.5, -math.floor(BOX_H/2)), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 24})
     stroke(box, Library.Theme.Accent, 0, 1)
     local fill = new("Frame", {Parent = box, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Visible = false, ZIndex = 23})
-    local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 14), Position = UDim2.new(0.5, -95, 0.5, -124), BackgroundTransparency = 1, Text = "@EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 14), Position = UDim2.new(0.5, -95, 0.5, -111), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 9, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 116), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 130), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(7, 207), Position = UDim2.new(0.5, -74, 0.5, -94), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BorderSizePixel = 0, Visible = false, ZIndex = 29})
-    local healthInner = new("Frame", {Parent = healthBg, Size = UDim2.new(1, -2, 1, -2), Position = UDim2.fromOffset(1, 1), BackgroundColor3 = Color3.fromRGB(20, 20, 20), BorderSizePixel = 0, ZIndex = 30})
-    local healthFill = new("Frame", {Parent = healthInner, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
-    local healthGradient = new("UIGradient", {Parent = healthFill, Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(220, 90, 90), Color3.fromRGB(90, 220, 90))})
-    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(36, 12), Position = UDim2.new(0.5, -112, 0.5, -99), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 32})
-    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(125, 205), Position = UDim2.new(0.5, -62, 0.5, -93), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
+
+    local name = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(120, 12), BackgroundTransparency = 1, Text = "@EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 12, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 28})
+    local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(120, 11), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 11, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 28})
+    local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(60, 12), BackgroundTransparency = 1, Text = "15m", TextColor3 = Library.Theme.Text, TextSize = 12, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 28})
+    local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(60, 12), BackgroundTransparency = 1, Text = "AKM", TextColor3 = Library.Theme.Text, TextSize = 12, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 28})
+
+    local HP_SEG_N = 12
+    local hpHolder = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(9, BOX_H + 4), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 29})
+    local hpOutline = new("Frame", {Parent = hpHolder, Size = UDim2.fromOffset(5, BOX_H + 2), Position = UDim2.fromOffset(2, 1), BackgroundColor3 = Color3.new(0,0,0), BorderSizePixel = 0, ZIndex = 29})
+    local hpSegs = {}
+    for i = 1, HP_SEG_N do
+        hpSegs[i] = new("Frame", {Parent = hpHolder, Size = UDim2.fromOffset(3, 1), BackgroundColor3 = Color3.new(1,1,1), BorderSizePixel = 0, Visible = false, ZIndex = 30})
+    end
+    local hpText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(40, 12), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.new(1,1,1), TextSize = 11, Font = Enum.Font.SourceSans, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, ZIndex = 32})
+
+    local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(BOX_W, BOX_H), Position = box.Position, BackgroundTransparency = 1, Visible = false, ZIndex = 27})
     local skeletonLines = {}
     local function skeletonLine(size, position)
         local line = new("Frame", {Parent = skeleton, Size = size, Position = position, AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, ZIndex = 27})
@@ -1695,53 +1703,16 @@ function Library:EspPreview(params)
     skeletonLine(UDim2.fromOffset(2, 54), UDim2.fromScale(0.68, 0.43))
     skeletonLine(UDim2.fromOffset(2, 58), UDim2.fromScale(0.4, 0.74))
     skeletonLine(UDim2.fromOffset(2, 58), UDim2.fromScale(0.6, 0.74))
-    local healthCurrent = 1
-    local healthTarget = 1
-    local healthTop = Color3.fromRGB(220, 90, 90)
-    local healthBottom = Color3.fromRGB(90, 220, 90)
+
+    local function lerp_c(a, b, t)
+        return Color3.new(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t)
+    end
+
+    local healthRatio = 1
     local healthAuto = true
-    local healthTweenId = 0
-    local function updateHealthCounter()
-        local ratio = math.clamp(healthFill.Size.Y.Scale, 0, 1)
-        healthCurrent = ratio
-        local tipColor = healthBottom:Lerp(healthTop, ratio)
-        healthText.Text = tostring(math.floor(ratio * 100 + 0.5))
-        healthText.TextColor3 = tipColor
-        healthText.Position = UDim2.new(0.5, -112, 0.5, -99 + (1 - ratio) * 205)
-    end
-    local function setHealthRatio(ratio, duration)
-        healthCurrent = math.clamp(ratio, 0, 1)
-        healthGradient.Color = ColorSequence.new(healthTop, healthBottom)
-        tween(healthFill, {Size = UDim2.new(1, 0, healthCurrent, 0)}, duration or 0.14)
-        updateHealthCounter()
-    end
-    task.spawn(function()
-        while frame.Parent do
-            if frame.Visible and healthBg.Visible then updateHealthCounter() end
-            task.wait(0.05)
-        end
-    end)
-    task.spawn(function()
-        while frame.Parent do
-            if healthAuto and frame.Visible and healthBg.Visible then
-                healthTweenId += 1
-                setHealthRatio(0, 1.35)
-                task.wait(1.4)
-                if not healthAuto then continue end
-                setHealthRatio(1, 1.35)
-                task.wait(1.4)
-            else
-                task.wait(0.25)
-            end
-        end
-    end)
-    local slot_items = {
-        { key = "name",        obj = name,        default = "top-center", default_pos = UDim2.new(0.5, -95, 0.5, -124) },
-        { key = "displayname", obj = displayName, default = "top-center", default_pos = UDim2.new(0.5, -95, 0.5, -111) },
-        { key = "distance",    obj = distance,    default = "bottom-center", default_pos = UDim2.new(0.5, -95, 0.5, 116) },
-        { key = "weapon",      obj = weapon,      default = "bottom-center", default_pos = UDim2.new(0.5, -95, 0.5, 130) },
-    }
-    local slot_keys = { "right-side", "bottom-center" }
+    local healthColorTop = Color3.fromRGB(90, 220, 90)
+    local healthColorBot = Color3.fromRGB(220, 90, 90)
+    local healthShowText = true
 
     local function box_metrics()
         local bp = box.AbsolutePosition
@@ -1750,23 +1721,78 @@ function Library:EspPreview(params)
         return bp.X - op.X, bp.Y - op.Y, bs.X, bs.Y
     end
 
-    local function slot_anchor(slot)
+    local function draw_health()
+        if not hpHolder.Visible then return end
         local bx, by, bw, bh = box_metrics()
-        local right = bx + bw
-        local bot = by + bh
-        local cx = bx + bw * 0.5
-        local cy = by + bh * 0.5
-        local pad = 6
-        if slot == "right-side"    then return right + pad, cy, "down", "left" end
-        if slot == "bottom-center" then return cx, bot + pad, "down", "center" end
-        return right + pad, cy, "down", "left"
+        local ratio = math.clamp(healthRatio, 0, 1)
+        local top_y = by
+        local fill_top_y = math.floor(by + bh * (1 - ratio))
+        hpHolder.Position = UDim2.fromOffset(bx - 9, by - 2)
+        hpHolder.Size = UDim2.fromOffset(9, bh + 4)
+        hpOutline.Position = UDim2.fromOffset(2, 1)
+        hpOutline.Size = UDim2.fromOffset(5, bh + 2)
+        for i = 1, HP_SEG_N do
+            local seg = hpSegs[i]
+            local sy0 = top_y + math.floor(bh * (i - 1) / HP_SEG_N)
+            local sy1 = top_y + math.floor(bh * i / HP_SEG_N)
+            if sy1 <= fill_top_y then
+                seg.Visible = false
+            else
+                local draw_from = math.max(sy0, fill_top_y)
+                local draw_to = sy1
+                if draw_to - draw_from < 1 then
+                    seg.Visible = false
+                else
+                    local mid = (sy0 + sy1) * 0.5
+                    local rel = math.clamp((mid - top_y) / bh, 0, 1)
+                    seg.Position = UDim2.fromOffset(3, draw_from - by + 2)
+                    seg.Size = UDim2.fromOffset(3, draw_to - draw_from)
+                    seg.BackgroundColor3 = lerp_c(healthColorTop, healthColorBot, rel)
+                    seg.Visible = true
+                end
+            end
+        end
+        if healthShowText then
+            hpText.Visible = true
+            hpText.Text = tostring(math.floor(ratio * 100 + 0.5))
+            hpText.Position = UDim2.fromOffset(bx - 52, fill_top_y - 6)
+        else
+            hpText.Visible = false
+        end
     end
+
+    task.spawn(function()
+        while frame.Parent do
+            if frame.Visible and healthAuto then
+                local t = tick() * 0.6
+                healthRatio = 0.5 + math.sin(t) * 0.5
+            end
+            draw_health()
+            task.wait(0.03)
+        end
+    end)
+
+    local slot_items = {
+        { key = "name",        obj = name,        default = "top-center" },
+        { key = "displayname", obj = displayName, default = "top-center" },
+        { key = "distance",    obj = distance,    default = "bottom-center" },
+        { key = "weapon",      obj = weapon,      default = "bottom-center" },
+    }
+    local slot_keys = {
+        "top-left", "top-center", "top-right",
+        "bottom-left", "bottom-center", "bottom-right",
+        "left-top", "left-bottom",
+        "right-top", "right-bottom",
+    }
 
     local function get_slot(key)
         local es = preview._settings
-        if es and es[key .. "_slot"] then return es[key .. "_slot"] end
+        if es then
+            local v = es[key .. "_slot"]
+            if type(v) == "string" then return v end
+        end
         for _, it in ipairs(slot_items) do if it.key == key then return it.default end end
-        return "top-left"
+        return "top-center"
     end
 
     local function set_slot(key, slot)
@@ -1775,104 +1801,102 @@ function Library:EspPreview(params)
         if preview._on_change then pcall(preview._on_change, key, slot) end
     end
 
-    local slot_zones = {}
-    for _, slot in ipairs(slot_keys) do
-        local zone = new("Frame", {
-            Parent = overlay,
-            BackgroundColor3 = Color3.new(1, 1, 1),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Visible = false,
-            ZIndex = 22,
-        })
-        slot_zones[slot] = zone
-    end
-
-    local function zone_rect(slot)
+    local function slot_anchor(slot)
         local bx, by, bw, bh = box_metrics()
+        local left = bx
         local right = bx + bw
+        local top = by
         local bot = by + bh
         local cx = bx + bw * 0.5
-        local pad = 6
-        if slot == "right-side" then
-            return right + pad, by, 70, bh
-        end
-        if slot == "bottom-center" then
-            return cx - 40, bot + pad, 80, 32
-        end
-        return 0, 0, 0, 0
-    end
-
-    local function refresh_zones(mode, active_slot, only_slot)
-        for slot, zone in pairs(slot_zones) do
-            local zx, zy, zw, zh = zone_rect(slot)
-            zone.Position = UDim2.fromOffset(zx, zy)
-            zone.Size = UDim2.fromOffset(zw, zh)
-            if mode == "hidden" then
-                zone.Visible = false
-            elseif mode == "single" then
-                if slot == only_slot then
-                    zone.Visible = true
-                    zone.BackgroundTransparency = 0.65
-                else
-                    zone.Visible = false
-                end
-            elseif mode == "all" then
-                zone.Visible = true
-                if slot == active_slot then
-                    zone.BackgroundTransparency = 0.4
-                else
-                    zone.BackgroundTransparency = 0.82
-                end
-            end
-        end
+        local pad = 3
+        if slot == "top-left"      then return left,       top - pad, -1, "left"   end
+        if slot == "top-center"    then return cx,         top - pad, -1, "center" end
+        if slot == "top-right"     then return right,      top - pad, -1, "right"  end
+        if slot == "bottom-left"   then return left,       bot + pad,  1, "left"   end
+        if slot == "bottom-center" then return cx,         bot + pad,  1, "center" end
+        if slot == "bottom-right"  then return right,      bot + pad,  1, "right"  end
+        if slot == "left-top"      then return left - 6,   top + 2,    1, "right"  end
+        if slot == "left-bottom"   then return left - 6,   bot - 2,   -1, "right"  end
+        if slot == "right-top"     then return right + 6,  top + 2,    1, "left"   end
+        if slot == "right-bottom"  then return right + 6,  bot - 2,   -1, "left"   end
+        return bx, by, 1, "left"
     end
 
     local function place_by_slot()
         local groups = {}
         for _, it in ipairs(slot_items) do
-            local es = preview._settings
-            local explicit = es and es[it.key .. "_slot"]
-            if explicit then
-                groups[explicit] = groups[explicit] or {}
-                groups[explicit][#groups[explicit] + 1] = it
-            else
-                if it.default_pos then
-                    it.obj.Position = it.default_pos
-                    it.obj.TextXAlignment = Enum.TextXAlignment.Center
-                end
+            if it.obj.Visible then
+                local s = get_slot(it.key)
+                groups[s] = groups[s] or {}
+                groups[s][#groups[s] + 1] = it
             end
         end
         for slot, items in pairs(groups) do
             local ax, ay, dir, align = slot_anchor(slot)
             local y = ay
-            for _, it in ipairs(items) do
-                local h = it.obj.AbsoluteSize.Y > 0 and it.obj.AbsoluteSize.Y or 14
-                local w = it.obj.AbsoluteSize.X > 0 and it.obj.AbsoluteSize.X or 60
-                local x
-                if align == "left" then x = ax
-                elseif align == "right" then x = ax - w
-                else x = ax - w * 0.5 end
-                it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
-                it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
-                    or (align == "left" and Enum.TextXAlignment.Left)
-                    or Enum.TextXAlignment.Center
-                y = y + h + 1
+            if dir < 0 then
+                for i = #items, 1, -1 do
+                    local it = items[i]
+                    local h = math.max(it.obj.AbsoluteSize.Y, it.obj.TextSize or 12)
+                    local w = math.max(it.obj.AbsoluteSize.X, 40)
+                    y = y - h - 1
+                    local x
+                    if align == "left" then x = ax
+                    elseif align == "right" then x = ax - w
+                    else x = ax - w * 0.5 end
+                    it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
+                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
+                        or (align == "left" and Enum.TextXAlignment.Left)
+                        or Enum.TextXAlignment.Center
+                end
+            else
+                for _, it in ipairs(items) do
+                    local h = math.max(it.obj.AbsoluteSize.Y, it.obj.TextSize or 12)
+                    local w = math.max(it.obj.AbsoluteSize.X, 40)
+                    local x
+                    if align == "left" then x = ax
+                    elseif align == "right" then x = ax - w
+                    else x = ax - w * 0.5 end
+                    it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
+                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
+                        or (align == "left" and Enum.TextXAlignment.Left)
+                        or Enum.TextXAlignment.Center
+                    y = y + h + 1
+                end
             end
         end
     end
+
+    local hover_highlight = new("Frame", {
+        Parent = overlay,
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        BackgroundTransparency = 0.75,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 21,
+    })
 
     local function elem_at(mp)
         for _, it in ipairs(slot_items) do
             if it.obj.Visible then
                 local hp = it.obj.AbsolutePosition
                 local hs = it.obj.AbsoluteSize
-                if mp.X >= hp.X - 3 and mp.X <= hp.X + hs.X + 3 and mp.Y >= hp.Y - 3 and mp.Y <= hp.Y + hs.Y + 3 then
+                if mp.X >= hp.X - 2 and mp.X <= hp.X + hs.X + 2 and mp.Y >= hp.Y - 2 and mp.Y <= hp.Y + hs.Y + 2 then
                     return it
                 end
             end
         end
         return nil
+    end
+
+    local function show_hover_for(it)
+        if not it then hover_highlight.Visible = false; return end
+        local op = overlay.AbsolutePosition
+        local hp = it.obj.AbsolutePosition
+        local hs = it.obj.AbsoluteSize
+        hover_highlight.Position = UDim2.fromOffset(hp.X - op.X - 2, hp.Y - op.Y - 2)
+        hover_highlight.Size = UDim2.fromOffset(hs.X + 4, hs.Y + 4)
+        hover_highlight.Visible = true
     end
 
     local function closest_slot(mp)
@@ -1896,17 +1920,15 @@ function Library:EspPreview(params)
         local os_ = overlay.AbsoluteSize
         local inside = mp.X >= op.X and mp.Y >= op.Y and mp.X <= op.X + os_.X and mp.Y <= op.Y + os_.Y
         if dragging then
-            local slot = closest_slot(mp)
-            refresh_zones("all", slot)
+            local dx = mp.X - op.X - dragging._grab_x
+            local dy = mp.Y - op.Y - dragging._grab_y
+            dragging.obj.Position = UDim2.fromOffset(math.floor(dx), math.floor(dy))
+            show_hover_for(dragging)
         elseif inside then
             local e = elem_at(mp)
-            if e then
-                refresh_zones("single", nil, get_slot(e.key))
-            else
-                refresh_zones("hidden")
-            end
+            show_hover_for(e)
         else
-            refresh_zones("hidden")
+            hover_highlight.Visible = false
         end
     end)
     connect(UIS.InputBegan, function(input)
@@ -1914,8 +1936,11 @@ function Library:EspPreview(params)
         local mp = Vector2.new(input.Position.X, input.Position.Y)
         local e = elem_at(mp)
         if not e then return end
+        local op = overlay.AbsolutePosition
+        local hp = e.obj.AbsolutePosition
+        e._grab_x = mp.X - hp.X
+        e._grab_y = mp.Y - hp.Y
         dragging = e
-        refresh_zones("all", get_slot(e.key))
     end)
     connect(UIS.InputEnded, function(input)
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
@@ -1924,14 +1949,15 @@ function Library:EspPreview(params)
         local slot = closest_slot(mp)
         if slot then
             set_slot(dragging.key, slot)
-            place_by_slot()
         end
         dragging = nil
-        refresh_zones("hidden")
+        place_by_slot()
+        hover_highlight.Visible = false
     end)
+
     task.spawn(function()
         while frame.Parent do
-            if frame.Visible then place_by_slot() end
+            if frame.Visible and not dragging then place_by_slot() end
             task.wait(0.05)
         end
     end)
@@ -1941,15 +1967,9 @@ function Library:EspPreview(params)
         preview.Visible = value == true
         frame.Visible = preview.Visible
     end
-    function preview:DockLeft()
-        dockRight()
-    end
-    function preview:DockRight()
-        dockRight()
-    end
-    function preview:SetAutoDock()
-        dockRight()
-    end
+    function preview:DockLeft() dockRight() end
+    function preview:DockRight() dockRight() end
+    function preview:SetAutoDock() dockRight() end
     function preview:SetText(value) title.Text = text(value) end
     function preview:RemoveObject(object) if object then pcall(function() object:Destroy() end) end end
     function preview:AddObject(object) if object then object.Parent = viewport end end
@@ -2037,6 +2057,9 @@ function Library:EspPreview(params)
         box.UIStroke.Color = colorValue(color, Library.Theme.Accent)
         fill.Visible = fillVisible == true
         fill.BackgroundColor3 = colorValue(fillColor, colorValue(color, Library.Theme.Accent))
+        if type(fillColor) == "table" and tonumber(fillColor[2]) then
+            fill.BackgroundTransparency = math.clamp(tonumber(fillColor[2]) or 0.5, 0, 1)
+        end
     end
     function preview:SetName(visible, color, value, displayVisible, displayColor, displayValue)
         name.Visible = visible == true
@@ -2047,22 +2070,17 @@ function Library:EspPreview(params)
         if displayValue then displayName.Text = tostring(displayValue) end
     end
     function preview:SetHealth(visible, value, topColor, bottomColor, counterVisible)
-        local show = visible == true
-        healthBg.Visible = show
-        healthText.Visible = show and counterVisible == true
-        local numeric = tonumber(value) or healthTarget
-        if numeric > 1 then numeric = numeric / 100 end
-        healthTarget = math.clamp(numeric, 0, 1)
-        healthTop = colorValue(topColor, colorValue(bottomColor, healthTop))
-        healthBottom = colorValue(bottomColor, healthBottom)
-        if not healthAuto then setHealthRatio(healthTarget, 0.18) end
+        hpHolder.Visible = visible == true
+        hpText.Visible = hpHolder.Visible and counterVisible == true
+        healthShowText = counterVisible == true
+        healthColorTop = colorValue(topColor, healthColorTop)
+        healthColorBot = colorValue(bottomColor, healthColorBot)
     end
     function preview:SetHealthCounter(visible)
-        healthText.Visible = healthBg.Visible and visible == true
+        healthShowText = visible == true
+        hpText.Visible = hpHolder.Visible and healthShowText
     end
-    function preview:SetAutoHealthAnimation(value)
-        healthAuto = value ~= false
-    end
+    function preview:SetAutoHealthAnimation(value) healthAuto = value ~= false end
     function preview:SetDistance(visible, color, value)
         distance.Visible = visible == true
         distance.TextColor3 = colorValue(color, Library.Theme.Text)
@@ -2073,9 +2091,13 @@ function Library:EspPreview(params)
         weapon.TextColor3 = colorValue(color, Library.Theme.Text)
         if value then weapon.Text = tostring(value) end
     end
-    function preview:SetSkeleton()
-        skeleton.Visible = false
-        for _, line in ipairs(skeletonLines) do line.Visible = false end
+    function preview:SetSkeleton(visible, color)
+        skeleton.Position = box.Position
+        skeleton.Visible = visible == true
+        for _, line in ipairs(skeletonLines) do
+            line.Visible = visible == true
+            line.BackgroundColor3 = colorValue(color, Library.Theme.Accent)
+        end
     end
     function preview:SetChams(visible, fillColor, outlineEnabled, outlineColor)
         if not preview.Player then return end
@@ -2122,7 +2144,7 @@ function Library:EspPreview(params)
             if preview.SetDistance then preview:SetDistance(es.dist, es.dist_color, "15m") end
             if preview.SetWeapon then preview:SetWeapon(es.weapon, es.weapon_color, "AKM") end
             if preview.SetSkeleton then preview:SetSkeleton(es.skeleton, es.skeleton_color) end
-            if preview.SetChams then preview:SetChams(es.chams, {es.chams_hidden_color, es.chams_hidden_transparency or 0.5}, true, {Color3.new(0,0,0), 0}, "Neon", false) end
+            if preview.SetChams then preview:SetChams(es.chams, es.chams_hidden_color, true, Color3.new(0,0,0)) end
         end)
     end
     task.spawn(function()
