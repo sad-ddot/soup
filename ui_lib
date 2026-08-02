@@ -1675,10 +1675,11 @@ function Library:EspPreview(params)
     local displayName = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 14), Position = UDim2.new(0.5, -95, 0.5, -111), BackgroundTransparency = 1, Text = "EnemyPlayer", TextColor3 = Library.Theme.Text, TextSize = 9, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
     local distance = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 116), BackgroundTransparency = 1, Text = "100m", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
     local weapon = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(0.5, -95, 0.5, 130), BackgroundTransparency = 1, Text = "Weapon", TextColor3 = Library.Theme.Text, TextSize = 10, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 28})
-    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(3, 205), Position = UDim2.new(0.5, -72, 0.5, -93), BackgroundColor3 = Color3.fromRGB(35, 35, 35), BorderSizePixel = 0, Visible = false, ZIndex = 30})
-    local healthFill = new("Frame", {Parent = healthBg, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
-    local healthGradient = new("UIGradient", {Parent = healthFill, Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(80, 255, 120), Color3.fromRGB(255, 80, 80))})
-    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(36, 12), Position = UDim2.new(0.5, -112, 0.5, -99), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 9, TextStrokeTransparency = 0.4, Visible = false, ZIndex = 32})
+    local healthBg = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(7, 207), Position = UDim2.new(0.5, -74, 0.5, -94), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BorderSizePixel = 0, Visible = false, ZIndex = 29})
+    local healthInner = new("Frame", {Parent = healthBg, Size = UDim2.new(1, -2, 1, -2), Position = UDim2.fromOffset(1, 1), BackgroundColor3 = Color3.fromRGB(20, 20, 20), BorderSizePixel = 0, ZIndex = 30})
+    local healthFill = new("Frame", {Parent = healthInner, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 255, 120), BorderSizePixel = 0, ZIndex = 31})
+    local healthGradient = new("UIGradient", {Parent = healthFill, Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(220, 90, 90), Color3.fromRGB(90, 220, 90))})
+    local healthText = new("TextLabel", {Parent = overlay, Size = UDim2.fromOffset(36, 12), Position = UDim2.new(0.5, -112, 0.5, -99), BackgroundTransparency = 1, Text = "100", TextColor3 = Color3.fromRGB(255, 255, 255), TextSize = 10, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.new(0,0,0), Visible = false, ZIndex = 32})
     local skeleton = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(125, 205), Position = UDim2.new(0.5, -62, 0.5, -93), BackgroundTransparency = 1, Visible = false, ZIndex = 27})
     local skeletonLines = {}
     local function skeletonLine(size, position)
@@ -1696,8 +1697,8 @@ function Library:EspPreview(params)
     skeletonLine(UDim2.fromOffset(2, 58), UDim2.fromScale(0.6, 0.74))
     local healthCurrent = 1
     local healthTarget = 1
-    local healthTop = Color3.fromRGB(80, 255, 120)
-    local healthBottom = Color3.fromRGB(255, 80, 80)
+    local healthTop = Color3.fromRGB(220, 90, 90)
+    local healthBottom = Color3.fromRGB(90, 220, 90)
     local healthAuto = true
     local healthTweenId = 0
     local function updateHealthCounter()
@@ -1735,12 +1736,12 @@ function Library:EspPreview(params)
         end
     end)
     local slot_items = {
-        { key = "name",        obj = name,        default = "top-left"     },
-        { key = "displayname", obj = displayName, default = "top-left"     },
-        { key = "distance",    obj = distance,    default = "bottom-left"  },
-        { key = "weapon",      obj = weapon,      default = "bottom-left"  },
+        { key = "name",        obj = name,        default = "top-center", default_pos = UDim2.new(0.5, -95, 0.5, -124) },
+        { key = "displayname", obj = displayName, default = "top-center", default_pos = UDim2.new(0.5, -95, 0.5, -111) },
+        { key = "distance",    obj = distance,    default = "bottom-center", default_pos = UDim2.new(0.5, -95, 0.5, 116) },
+        { key = "weapon",      obj = weapon,      default = "bottom-center", default_pos = UDim2.new(0.5, -95, 0.5, 130) },
     }
-    local slot_keys = { "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right" }
+    local slot_keys = { "right-side", "bottom-center" }
 
     local function box_metrics()
         local bp = box.AbsolutePosition
@@ -1754,14 +1755,11 @@ function Library:EspPreview(params)
         local right = bx + bw
         local bot = by + bh
         local cx = bx + bw * 0.5
-        local pad = 4
-        if slot == "top-left"      then return bx, by - pad, "up",   "left"   end
-        if slot == "top-center"    then return cx, by - pad, "up",   "center" end
-        if slot == "top-right"     then return right, by - pad, "up",   "right"  end
-        if slot == "bottom-left"   then return bx, bot + pad, "down", "left"   end
+        local cy = by + bh * 0.5
+        local pad = 6
+        if slot == "right-side"    then return right + pad, cy, "down", "left" end
         if slot == "bottom-center" then return cx, bot + pad, "down", "center" end
-        if slot == "bottom-right"  then return right, bot + pad, "down", "right"  end
-        return cx, by - pad, "up", "center"
+        return right + pad, cy, "down", "left"
     end
 
     local function get_slot(key)
@@ -1792,17 +1790,16 @@ function Library:EspPreview(params)
 
     local function zone_rect(slot)
         local bx, by, bw, bh = box_metrics()
-        local zw, zh = 60, 16
         local right = bx + bw
         local bot = by + bh
         local cx = bx + bw * 0.5
-        local pad = 4
-        if slot == "top-left"      then return bx, by - pad - zh, zw, zh end
-        if slot == "top-center"    then return cx - zw * 0.5, by - pad - zh, zw, zh end
-        if slot == "top-right"     then return right - zw, by - pad - zh, zw, zh end
-        if slot == "bottom-left"   then return bx, bot + pad, zw, zh end
-        if slot == "bottom-center" then return cx - zw * 0.5, bot + pad, zw, zh end
-        if slot == "bottom-right"  then return right - zw, bot + pad, zw, zh end
+        local pad = 6
+        if slot == "right-side" then
+            return right + pad, by, 70, bh
+        end
+        if slot == "bottom-center" then
+            return cx - 40, bot + pad, 80, 32
+        end
         return 0, 0, 0, 0
     end
 
@@ -1834,42 +1831,33 @@ function Library:EspPreview(params)
     local function place_by_slot()
         local groups = {}
         for _, it in ipairs(slot_items) do
-            local slot = get_slot(it.key)
-            groups[slot] = groups[slot] or {}
-            groups[slot][#groups[slot] + 1] = it
+            local es = preview._settings
+            local explicit = es and es[it.key .. "_slot"]
+            if explicit then
+                groups[explicit] = groups[explicit] or {}
+                groups[explicit][#groups[explicit] + 1] = it
+            else
+                if it.default_pos then
+                    it.obj.Position = it.default_pos
+                    it.obj.TextXAlignment = Enum.TextXAlignment.Center
+                end
+            end
         end
         for slot, items in pairs(groups) do
             local ax, ay, dir, align = slot_anchor(slot)
             local y = ay
-            if dir == "up" then
-                for i = #items, 1, -1 do
-                    local it = items[i]
-                    local h = it.obj.AbsoluteSize.Y > 0 and it.obj.AbsoluteSize.Y or 14
-                    y = y - h - 1
-                    local w = it.obj.AbsoluteSize.X > 0 and it.obj.AbsoluteSize.X or 60
-                    local x
-                    if align == "left" then x = ax
-                    elseif align == "right" then x = ax - w
-                    else x = ax - w * 0.5 end
-                    it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
-                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
-                        or (align == "left" and Enum.TextXAlignment.Left)
-                        or Enum.TextXAlignment.Center
-                end
-            else
-                for _, it in ipairs(items) do
-                    local h = it.obj.AbsoluteSize.Y > 0 and it.obj.AbsoluteSize.Y or 14
-                    local w = it.obj.AbsoluteSize.X > 0 and it.obj.AbsoluteSize.X or 60
-                    local x
-                    if align == "left" then x = ax
-                    elseif align == "right" then x = ax - w
-                    else x = ax - w * 0.5 end
-                    it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
-                    it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
-                        or (align == "left" and Enum.TextXAlignment.Left)
-                        or Enum.TextXAlignment.Center
-                    y = y + h + 1
-                end
+            for _, it in ipairs(items) do
+                local h = it.obj.AbsoluteSize.Y > 0 and it.obj.AbsoluteSize.Y or 14
+                local w = it.obj.AbsoluteSize.X > 0 and it.obj.AbsoluteSize.X or 60
+                local x
+                if align == "left" then x = ax
+                elseif align == "right" then x = ax - w
+                else x = ax - w * 0.5 end
+                it.obj.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
+                it.obj.TextXAlignment = (align == "right" and Enum.TextXAlignment.Right)
+                    or (align == "left" and Enum.TextXAlignment.Left)
+                    or Enum.TextXAlignment.Center
+                y = y + h + 1
             end
         end
     end
@@ -1951,7 +1939,7 @@ function Library:EspPreview(params)
     local highlight
     function preview:SetVisibility(value)
         preview.Visible = value == true
-        frame.Visible = preview.Visible and (not window or window.Main.Visible)
+        frame.Visible = preview.Visible
     end
     function preview:DockLeft()
         dockRight()
