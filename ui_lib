@@ -798,10 +798,17 @@ end
 function Library:CreateColorpicker(data)
     data = data or {}
     local state = {Color = data.Default or Color3.new(1, 1, 1), Transparency = data.Alpha or 0}
-    local flag = data.Flag
+    local flag = tostring(data.Flag or data.Name or "Colorpicker")
+    local base_flag = flag
+    local suffix = 2
+    while self.Flags[flag] ~= nil do
+        flag = base_flag .. "_" .. tostring(suffix)
+        suffix = suffix + 1
+    end
     local hue, sat, val = state.Color:ToHSV()
     self.Flags[flag] = state
     local swatch = new("ImageButton", {Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, -26, 0.5, -10), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://14008802626", ImageColor3 = state.Color, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
+    swatch:SetAttribute("NoTheme", true)
     repositionRightWidgets(data.Parent)
     local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
     popup:SetAttribute("NoTheme", true)
@@ -1389,13 +1396,15 @@ end
 function SectionMethods:Button(label, callback)
     if type(label) == "table" then callback = label.Func or label.Callback; label = label.Text or label.Name end
     local holder = new("Frame", {Size = UDim2.new(1, 0, 0, 23), BackgroundTransparency = 1, BorderSizePixel = 0}, self.Body)
-    local bg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 1}, holder)
+    local bg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1}, holder)
+    bg:SetAttribute("NoTheme", true)
     round(bg, 3)
     stroke(bg, Library.Theme.Stroke, 0.08)
-    local buttonGradient = new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(27, 29, 35))}, bg)
+    local buttonGradient = new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(24, 26, 31), Color3.fromRGB(48, 52, 62))}, bg)
+    buttonGradient:SetAttribute("NoTheme", true)
     local button = new("TextButton", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = tostring(label or "Button"), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 12, AutoButtonColor = false, ZIndex = 2}, holder)
-    connect(button.MouseEnter, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(18, 20, 24), Color3.fromRGB(36, 39, 46)) end)
-    connect(button.MouseLeave, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(27, 29, 35)) end)
+    connect(button.MouseEnter, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(36, 39, 46), Color3.fromRGB(70, 76, 90)) end)
+    connect(button.MouseLeave, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(24, 26, 31), Color3.fromRGB(48, 52, 62)) end)
     connect(button.MouseButton1Click, function() Library:SafeCall(callback) end)
     return button
 end
