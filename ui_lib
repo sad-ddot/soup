@@ -383,7 +383,7 @@ function Library:Window(data)
     local titleLabel = new("TextLabel", {Size = UDim2.fromOffset(220, 28), Position = UDim2.fromOffset(54, 5), BackgroundTransparency = 1, Text = title, TextColor3 = Library.Theme.Text, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left}, header)
     new("UIGradient", {Color = ColorSequence.new(Library.Theme.Accent, Color3.fromRGB(245, 245, 245)), Rotation = 0}, titleLabel)
     local tabBar = new("Frame", {Size = UDim2.new(1, -292, 0, 34), Position = UDim2.fromOffset(276, 2), BackgroundTransparency = 1, BorderSizePixel = 0}, header)
-    new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 18), VerticalAlignment = Enum.VerticalAlignment.Center}, tabBar)
+    new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center, HorizontalAlignment = Enum.HorizontalAlignment.Center}, tabBar)
     local underline = new("Frame", {Size = UDim2.fromOffset(0, 2), Position = UDim2.fromOffset(0, 33), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0}, main)
     round(underline, 3)
     new("UIGradient", {Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.92), NumberSequenceKeypoint.new(0.12, 0), NumberSequenceKeypoint.new(0.88, 0), NumberSequenceKeypoint.new(1, 0.92)})}, underline)
@@ -487,7 +487,7 @@ end
 function WindowMethods:Page(data)
     data = data or {}
     local name = data.Name or data.name or "Page"
-    local tab = new("TextButton", {Size = UDim2.fromOffset(math.max(66, #name * 9), 30), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, AutoButtonColor = false, BorderSizePixel = 0}, self.TabBar)
+    local tab = new("TextButton", {Size = UDim2.fromOffset(math.max(48, #name * 8), 30), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, AutoButtonColor = false, BorderSizePixel = 0}, self.TabBar)
     round(tab, 3)
     local page = new("CanvasGroup", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, GroupTransparency = 1, Visible = false}, self.PageRoot)
     local pageScale = new("UIScale", {Scale = 0.985}, page)
