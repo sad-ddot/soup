@@ -14,6 +14,7 @@ local Library = {
     Windows = {},
     OpenFrames = {},
     SettingsPopups = {},
+    CustomPopups = setmetatable({}, {__mode = "k"}),
     PopupOwners = setmetatable({}, {__mode = "k"}),
     Keybinds = {},
     Folders = {
@@ -372,6 +373,18 @@ function Library:CloseSettingsPopups()
     self.SettingsPopups = {}
 end
 
+function Library:RegisterCustomPopup(object, close)
+    if not object then return nil end
+    self.CustomPopups[object] = close or function()
+        pcall(function() object.Visible = false end)
+    end
+    return object
+end
+
+function Library:CloseCustomPopups()
+    for _, closer in pairs(self.CustomPopups) do pcall(closer) end
+end
+
 function Library:BindActive(toggleValue, bindFlag)
     if toggleValue ~= true then return false end
     local bind = self.Flags[bindFlag]
@@ -524,6 +537,7 @@ end
 
 function WindowMethods:SetOpen(value)
     self.Open = value == true
+    Library:CloseCustomPopups()
     Library:CloseSettingsPopups()
     if self.Open then
         self.Main.Visible = true
@@ -545,6 +559,7 @@ function WindowMethods:SetOpen(value)
 end
 
 function WindowMethods:Unload()
+    Library:CloseCustomPopups()
     self.Alive = false
     pcall(function() self.Gui:Destroy() end)
 end
@@ -728,6 +743,7 @@ function PageMethods:SubPage(data)
         self.Right.Position = UDim2.new(0.5, 55, 0, 0)
         self.Right.Size = UDim2.new(0.5, -55, 1, 0)
         function self:SelectSubPage(label)
+            Library:CloseCustomPopups()
             Library:CloseSettingsPopups()
             for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
             Library.OpenFrames = {}
@@ -1482,8 +1498,8 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     local boxBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 0.18, BorderSizePixel = 0, Active = false, ZIndex = 100}, box)
     round(boxBg, 4)
     local boxStroke = stroke(boxBg, Library.Theme.Stroke, 0.18)
-    local boxLine = new("Frame", {Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.18, BorderSizePixel = 0, ZIndex = 100}, boxBg)
-    local selected = new("TextLabel", {Size = UDim2.new(1, -30, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Text = type(current) == "table" and table.concat(current, ", ") or text(current), TextColor3 = Library.Theme.Text, TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 101}, box)
+    local boxLine = new("Frame", {Size = UDim2.new(1, -10, 0, 1), Position = UDim2.new(0, 5, 1, -1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 100}, boxBg)
+    local selected = new("TextLabel", {Size = UDim2.new(1, -38, 1, 0), Position = UDim2.fromOffset(8, 0), BackgroundTransparency = 1, Text = type(current) == "table" and table.concat(current, ", ") or text(current), TextColor3 = Library.Theme.Text, TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 101}, box)
     local arrow = new("Frame", {Size = UDim2.fromOffset(16, 18), Position = UDim2.new(1, -18, 0, 2), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 102}, box)
     local arrowLeft = new("Frame", {Size = UDim2.fromOffset(6, 1), Position = UDim2.fromOffset(2, 8), Rotation = 35, BackgroundColor3 = Library.Theme.Dim, BorderSizePixel = 0, ZIndex = 103}, arrow)
     local arrowRight = new("Frame", {Size = UDim2.fromOffset(6, 1), Position = UDim2.fromOffset(8, 8), Rotation = -35, BackgroundColor3 = Library.Theme.Dim, BorderSizePixel = 0, ZIndex = 103}, arrow)
@@ -1494,7 +1510,7 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     local function setBoxState(active)
         tween(boxBg, {BackgroundColor3 = active and Library.Theme.ControlHover or Library.Theme.Input, BackgroundTransparency = active and 0.04 or 0.18}, 0.12)
         tween(boxStroke, {Color = active and Library.Theme.Accent or Library.Theme.Stroke, Transparency = active and 0.05 or 0.18}, 0.12)
-        tween(boxLine, {BackgroundColor3 = active and Library.Theme.Accent or Library.Theme.Stroke, BackgroundTransparency = active and 0 or 0.18}, 0.12)
+        tween(boxLine, {BackgroundColor3 = active and Library.Theme.Accent or Library.Theme.Stroke, BackgroundTransparency = active and 0.15 or 0.5}, 0.12)
     end
     local list = new("CanvasGroup", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ClipsDescendants = true, GroupTransparency = 1, ZIndex = 9600}, self.Window.PopupLayer)
     Library.PopupOwners[list] = findSettingsOwner(self.Body)
