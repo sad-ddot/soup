@@ -622,6 +622,7 @@ function WindowMethods:Page(data)
 end
 
 function WindowMethods:SelectPage(name)
+    Library:CloseCustomPopups()
     Library:CloseSettingsPopups()
     for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
     Library.OpenFrames = {}
