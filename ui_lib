@@ -14,7 +14,6 @@ local Library = {
     Windows = {},
     OpenFrames = {},
     SettingsPopups = {},
-    CustomPopups = setmetatable({}, {__mode = "k"}),
     PopupOwners = setmetatable({}, {__mode = "k"}),
     Keybinds = {},
     Folders = {
@@ -373,18 +372,6 @@ function Library:CloseSettingsPopups()
     self.SettingsPopups = {}
 end
 
-function Library:RegisterCustomPopup(object, close)
-    if not object then return nil end
-    self.CustomPopups[object] = close or function()
-        pcall(function() object.Visible = false end)
-    end
-    return object
-end
-
-function Library:CloseCustomPopups()
-    for _, closer in pairs(self.CustomPopups) do pcall(closer) end
-end
-
 function Library:BindActive(toggleValue, bindFlag)
     if toggleValue ~= true then return false end
     local bind = self.Flags[bindFlag]
@@ -537,7 +524,6 @@ end
 
 function WindowMethods:SetOpen(value)
     self.Open = value == true
-    Library:CloseCustomPopups()
     Library:CloseSettingsPopups()
     if self.Open then
         self.Main.Visible = true
@@ -559,7 +545,6 @@ function WindowMethods:SetOpen(value)
 end
 
 function WindowMethods:Unload()
-    Library:CloseCustomPopups()
     self.Alive = false
     pcall(function() self.Gui:Destroy() end)
 end
@@ -622,7 +607,6 @@ function WindowMethods:Page(data)
 end
 
 function WindowMethods:SelectPage(name)
-    Library:CloseCustomPopups()
     Library:CloseSettingsPopups()
     for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
     Library.OpenFrames = {}
@@ -744,7 +728,6 @@ function PageMethods:SubPage(data)
         self.Right.Position = UDim2.new(0.5, 55, 0, 0)
         self.Right.Size = UDim2.new(0.5, -55, 1, 0)
         function self:SelectSubPage(label)
-            Library:CloseCustomPopups()
             Library:CloseSettingsPopups()
             for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
             Library.OpenFrames = {}
@@ -1043,33 +1026,33 @@ function Library:CreateColorpicker(data)
     local swatch = new("ImageButton", {Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, -26, 0.5, -10), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://14008802626", ImageColor3 = state.Color, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 6, Name = "__swatch"}, data.Parent)
     swatch:SetAttribute("NoTheme", true)
     repositionRightWidgets(data.Parent)
-    local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9650})
+    local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
     popup:SetAttribute("NoTheme", true)
     Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
     round(popup, 8)
     stroke(popup, Library.Theme.Stroke, 0.05)
-    local palette = new("Frame", {Parent = popup, Size = UDim2.fromOffset(138, 108), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.fromHSV(hue, 1, 1), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 9651})
+    local palette = new("Frame", {Parent = popup, Size = UDim2.fromOffset(138, 108), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.fromHSV(hue, 1, 1), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 9201})
     round(palette, 5)
-    local satLayer = new("Frame", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9652})
+    local satLayer = new("Frame", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9202})
     new("UIGradient", {Parent = satLayer, Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})})
-    local valLayer = new("Frame", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 9653})
+    local valLayer = new("Frame", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 9203})
     new("UIGradient", {Parent = valLayer, Rotation = 90, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)})})
-    local palHit = new("TextButton", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9656})
-    local palKnob = new("Frame", {Parent = popup, Size = UDim2.fromOffset(9, 9), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9660})
+    local palHit = new("TextButton", {Parent = palette, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9206})
+    local palKnob = new("Frame", {Parent = popup, Size = UDim2.fromOffset(9, 9), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9210})
     round(palKnob, 5)
     stroke(palKnob, Color3.new(0, 0, 0), 0.3)
-    local hueBar = new("Frame", {Parent = popup, Size = UDim2.fromOffset(14, 108), Position = UDim2.fromOffset(152, 8), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9651})
+    local hueBar = new("Frame", {Parent = popup, Size = UDim2.fromOffset(14, 108), Position = UDim2.fromOffset(152, 8), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9201})
     round(hueBar, 4)
     new("UIGradient", {Parent = hueBar, Rotation = 90, Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHSV(0, 1, 1)), ColorSequenceKeypoint.new(1/6, Color3.fromHSV(1/6, 1, 1)), ColorSequenceKeypoint.new(2/6, Color3.fromHSV(2/6, 1, 1)), ColorSequenceKeypoint.new(3/6, Color3.fromHSV(3/6, 1, 1)), ColorSequenceKeypoint.new(4/6, Color3.fromHSV(4/6, 1, 1)), ColorSequenceKeypoint.new(5/6, Color3.fromHSV(5/6, 1, 1)), ColorSequenceKeypoint.new(1, Color3.fromHSV(1, 1, 1))})})
-    local hueHit = new("TextButton", {Parent = hueBar, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9652})
-    local hueKnob = new("Frame", {Parent = hueBar, Size = UDim2.new(1, 4, 0, 4), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9653})
+    local hueHit = new("TextButton", {Parent = hueBar, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9202})
+    local hueKnob = new("Frame", {Parent = hueBar, Size = UDim2.new(1, 4, 0, 4), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9203})
     round(hueKnob, 2)
     stroke(hueKnob, Color3.new(0, 0, 0), 0.4)
-    local alphaBar = new("Frame", {Parent = popup, Size = UDim2.fromOffset(170, 12), Position = UDim2.fromOffset(8, 122), BackgroundColor3 = state.Color, BorderSizePixel = 0, ZIndex = 9651})
+    local alphaBar = new("Frame", {Parent = popup, Size = UDim2.fromOffset(170, 12), Position = UDim2.fromOffset(8, 122), BackgroundColor3 = state.Color, BorderSizePixel = 0, ZIndex = 9201})
     round(alphaBar, 4)
     new("UIGradient", {Parent = alphaBar, Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)})})
-    local alphaHit = new("TextButton", {Parent = alphaBar, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9652})
-    local alphaKnob = new("Frame", {Parent = alphaBar, Size = UDim2.new(0, 4, 1, 4), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9653})
+    local alphaHit = new("TextButton", {Parent = alphaBar, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9202})
+    local alphaKnob = new("Frame", {Parent = alphaBar, Size = UDim2.new(0, 4, 1, 4), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 9203})
     round(alphaKnob, 2)
     stroke(alphaKnob, Color3.new(0, 0, 0), 0.4)
     local hexLabel = new("TextLabel", {Parent = popup, Size = UDim2.fromOffset(170, 14), Position = UDim2.fromOffset(8, 139), BackgroundTransparency = 1, TextColor3 = Library.Theme.Dim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9201})
@@ -1114,10 +1097,10 @@ function Library:CreateColorpicker(data)
     connect(swatch.MouseButton1Click, function() if open then close() else show() end end)
 
     local ctxOpen = false
-    local ctx = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(80, 26), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9670})
+    local ctx = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(80, 26), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9300})
     Library.PopupOwners[ctx] = findSettingsOwner(data.Parent)
     round(ctx, 4)
-    local ctxCopy = new("TextButton", {Parent = ctx, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Copy", TextColor3 = Color3.fromRGB(230, 230, 230), TextSize = 11, AutoButtonColor = false, ZIndex = 9671})
+    local ctxCopy = new("TextButton", {Parent = ctx, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Copy", TextColor3 = Color3.fromRGB(230, 230, 230), TextSize = 11, AutoButtonColor = false, ZIndex = 9301})
     local function ctxClose()
         if not ctxOpen then return end
         ctxOpen = false
@@ -1220,11 +1203,11 @@ function Library:CreateKeybind(data)
     stroke(shellBg, Library.Theme.Stroke, 0.35)
     local kbIcon = new("ImageLabel", {Size = UDim2.fromOffset(11, 11), Position = UDim2.new(0, 5, 0.5, -5), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 6}, shell)
     local button = new("TextButton", {Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(19, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = bind.Value, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 10, AutoButtonColor = false, ZIndex = 6, TextXAlignment = Enum.TextXAlignment.Center}, shell)
-    local popup = new("CanvasGroup", {Size = UDim2.fromOffset(88, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9680, ClipsDescendants = true}, data.Window.PopupLayer)
+    local popup = new("CanvasGroup", {Size = UDim2.fromOffset(88, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9100, ClipsDescendants = true}, data.Window.PopupLayer)
     Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
-    local popupBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9680}, popup)
+    local popupBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9100}, popup)
     round(popupBg, 4)
-    local popupContent = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.fromOffset(0, 2), BackgroundTransparency = 1, ZIndex = 9681}, popup)
+    local popupContent = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.fromOffset(0, 2), BackgroundTransparency = 1, ZIndex = 9101}, popup)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, popupContent)
     new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4)}, popupContent)
     local open = false
@@ -1291,9 +1274,9 @@ function Library:CreateKeybind(data)
         end)
     end)
     for _, mode in ipairs({"Hold", "Toggle", "Always"}) do
-        local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9682}, popupContent)
+        local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 9102}, popupContent)
         new("UIPadding", {PaddingLeft = UDim.new(0, 10)}, option)
-        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(-12, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9683}, option)
+        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(-12, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9103}, option)
         round(line, 2)
         modeButtons[mode] = option
         modeLines[mode] = line
@@ -1496,11 +1479,9 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     local holder = new("Frame", {Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, ZIndex = 100}, self.Body)
     new("TextLabel", {Size = UDim2.new(1, 0, 0, 12), BackgroundTransparency = 1, Text = data.Name or flag, TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, holder)
     local box = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 14), BackgroundTransparency = 1, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 100}, holder)
-    local boxBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 0.18, BorderSizePixel = 0, Active = false, ZIndex = 100}, box)
-    round(boxBg, 4)
-    local boxStroke = stroke(boxBg, Library.Theme.Stroke, 0.18)
-    local boxLine = new("Frame", {Size = UDim2.new(1, -10, 0, 1), Position = UDim2.new(0, 5, 1, -1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 100}, boxBg)
-    local selected = new("TextLabel", {Size = UDim2.new(1, -38, 1, 0), Position = UDim2.fromOffset(8, 0), BackgroundTransparency = 1, Text = type(current) == "table" and table.concat(current, ", ") or text(current), TextColor3 = Library.Theme.Text, TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 101}, box)
+    local boxBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 100}, box)
+    local boxLine = new("Frame", {Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.18, BorderSizePixel = 0, ZIndex = 100}, boxBg)
+    local selected = new("TextLabel", {Size = UDim2.new(1, -30, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Text = type(current) == "table" and table.concat(current, ", ") or text(current), TextColor3 = Library.Theme.Text, TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 101}, box)
     local arrow = new("Frame", {Size = UDim2.fromOffset(16, 18), Position = UDim2.new(1, -18, 0, 2), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 102}, box)
     local arrowLeft = new("Frame", {Size = UDim2.fromOffset(6, 1), Position = UDim2.fromOffset(2, 8), Rotation = 35, BackgroundColor3 = Library.Theme.Dim, BorderSizePixel = 0, ZIndex = 103}, arrow)
     local arrowRight = new("Frame", {Size = UDim2.fromOffset(6, 1), Position = UDim2.fromOffset(8, 8), Rotation = -35, BackgroundColor3 = Library.Theme.Dim, BorderSizePixel = 0, ZIndex = 103}, arrow)
@@ -1508,18 +1489,13 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         tween(arrowLeft, {Rotation = isOpen and -35 or 35, BackgroundColor3 = isOpen and Library.Theme.Accent or Library.Theme.Dim}, 0.12)
         tween(arrowRight, {Rotation = isOpen and 35 or -35, BackgroundColor3 = isOpen and Library.Theme.Accent or Library.Theme.Dim}, 0.12)
     end
-    local function setBoxState(active)
-        tween(boxBg, {BackgroundColor3 = active and Library.Theme.ControlHover or Library.Theme.Input, BackgroundTransparency = active and 0.04 or 0.18}, 0.12)
-        tween(boxStroke, {Color = active and Library.Theme.Accent or Library.Theme.Stroke, Transparency = active and 0.05 or 0.18}, 0.12)
-        tween(boxLine, {BackgroundColor3 = active and Library.Theme.Accent or Library.Theme.Stroke, BackgroundTransparency = active and 0.15 or 0.5}, 0.12)
-    end
-    local list = new("CanvasGroup", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ClipsDescendants = true, GroupTransparency = 1, ZIndex = 9600}, self.Window.PopupLayer)
+    local list = new("CanvasGroup", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ClipsDescendants = true, GroupTransparency = 1, ZIndex = 9001}, self.Window.PopupLayer)
     Library.PopupOwners[list] = findSettingsOwner(self.Body)
     round(list, 4)
-    local listBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9600}, list)
+    local listBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9001}, list)
     round(listBg, 4)
     stroke(listBg, Library.Theme.Stroke, 0.1)
-    local scroll = new("ScrollingFrame", {Size = UDim2.new(1, -2, 1, -2), Position = UDim2.fromOffset(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 9601}, list)
+    local scroll = new("ScrollingFrame", {Size = UDim2.new(1, -2, 1, -2), Position = UDim2.fromOffset(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 9002}, list)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, scroll)
     new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4)}, scroll)
     local open = false
@@ -1541,10 +1517,9 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     local function paint()
         for option, item in pairs(labels) do
             local on = isSelected(option)
-            item.Label.TextColor3 = on and Library.Theme.Accent or Library.Theme.Text
+            item.Label.TextColor3 = on and Library.Theme.Accent or Color3.fromRGB(255, 255, 255)
             item.Line.Visible = on
-            item.Row.BackgroundColor3 = on and Library.Theme.ControlHover or Library.Theme.Control
-            item.Row.BackgroundTransparency = on and 0.12 or 1
+            item.Row.BackgroundTransparency = on and 0.9 or 1
             item.Line.BackgroundColor3 = Library.Theme.Accent
         end
     end
@@ -1564,19 +1539,11 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     local function place()
         local p = self.Window.PopupLayer.AbsolutePosition
         local b = box.AbsolutePosition
-        local layer = self.Window.PopupLayer.AbsoluteSize
-        local height = math.min(math.max(#options, 1), 6) * 20 + 8
-        local x = b.X - p.X
-        local y = b.Y - p.Y + box.AbsoluteSize.Y + 2
-        if layer.Y > 0 and y + height > layer.Y - 6 then
-            y = b.Y - p.Y - height - 2
-        end
-        list.Position = UDim2.fromOffset(math.max(4, x), math.max(4, y))
+        list.Position = UDim2.fromOffset(b.X - p.X, b.Y - p.Y + box.AbsoluteSize.Y + 2)
     end
     local function close()
         open = false
         setArrow(false)
-        setBoxState(false)
         Library.OpenFrames[list] = nil
         tween(list, {Size = UDim2.fromOffset(list.AbsoluteSize.X, 0), GroupTransparency = 1}, 0.12).Completed:Connect(function()
             if not open then
@@ -1589,7 +1556,6 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         for _, frame in pairs(Library.OpenFrames) do pcall(frame) end
         Library.OpenFrames = {}
         open = true
-        setBoxState(true)
         Library.PopupOwners[list] = findSettingsOwner(self.Body)
         list.Visible = true
         list.GroupTransparency = 1
@@ -1605,10 +1571,10 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
             if child:IsA("TextButton") then child:Destroy() end
         end
         for _, option in ipairs(options) do
-            local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Control, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9602}, scroll)
-            local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9603}, row)
+            local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Control, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9003}, scroll)
+            local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9004}, row)
             round(line, 2)
-            local label = new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9603}, row)
+            local label = new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9004}, row)
             labels[option] = {Label = label, Line = line, Row = row}
             connect(row.MouseEnter, function() if not isSelected(option) then tween(row, {BackgroundTransparency = 0.88}, 0.1) end end)
             connect(row.MouseLeave, function() if not isSelected(option) then tween(row, {BackgroundTransparency = 1}, 0.1) end end)
@@ -1619,22 +1585,21 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         end
     end
     setArrow(false)
-    setBoxState(false)
     connect(box.MouseButton1Click, function()
         if open then close() else openList() end
         setArrow(open)
     end)
     connect(box.MouseEnter, function()
-        setBoxState(true)
         tween(selected, {TextColor3 = Library.Theme.Text}, 0.1)
         tween(arrowLeft, {BackgroundColor3 = Library.Theme.Accent}, 0.1)
         tween(arrowRight, {BackgroundColor3 = Library.Theme.Accent}, 0.1)
+        tween(boxLine, {BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0}, 0.1)
     end)
     connect(box.MouseLeave, function()
-        if not open then setBoxState(false) end
         tween(selected, {TextColor3 = Library.Theme.Text}, 0.1)
         tween(arrowLeft, {BackgroundColor3 = open and Library.Theme.Accent or Library.Theme.Dim}, 0.1)
         tween(arrowRight, {BackgroundColor3 = open and Library.Theme.Accent or Library.Theme.Dim}, 0.1)
+        tween(boxLine, {BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.18}, 0.1)
     end)
     connect(RunService.RenderStepped, function() if open and list.Visible then place() end end)
     connect(UIS.InputBegan, function(input)
