@@ -13,6 +13,8 @@ local Library = {
     Objects = {},
     Windows = {},
     OpenFrames = {},
+    SettingsPopups = {},
+    PopupOwners = setmetatable({}, {__mode = "k"}),
     Keybinds = {},
     Folders = {
         Directory = "CatHack",
@@ -336,9 +338,38 @@ local function resolveLogo(input)
 end
 
 local function inBounds(position, frame)
+    if not frame or not frame.Parent then return false end
+    if typeof(position) == "Vector3" then
+        position = Vector2.new(position.X, position.Y)
+    end
+    if typeof(position) ~= "Vector2" then return false end
     local p = frame.AbsolutePosition
     local s = frame.AbsoluteSize
     return position.X >= p.X and position.X <= p.X + s.X and position.Y >= p.Y and position.Y <= p.Y + s.Y
+end
+
+local function findSettingsOwner(parent)
+    local node = parent
+    while node do
+        if node:GetAttribute("SettingsPopupRoot") == true then return node end
+        node = node.Parent
+    end
+    return nil
+end
+
+local function pointInSettingsTree(owner, position)
+    if inBounds(position, owner) then return true end
+    for popup, popupOwner in pairs(Library.PopupOwners) do
+        if popupOwner == owner and popup.Parent and popup.Visible and inBounds(position, popup) then
+            return true
+        end
+    end
+    return false
+end
+
+function Library:CloseSettingsPopups()
+    for _, closer in pairs(self.SettingsPopups) do pcall(closer) end
+    self.SettingsPopups = {}
 end
 
 function Library:BindActive(toggleValue, bindFlag)
@@ -493,6 +524,7 @@ end
 
 function WindowMethods:SetOpen(value)
     self.Open = value == true
+    Library:CloseSettingsPopups()
     if self.Open then
         self.Main.Visible = true
         if self.ESPPreviewObject and self.ESPPreviewObject.Visible then if self.ESPPreviewObject.DockLeft then self.ESPPreviewObject:DockLeft() end self.ESPPreviewObject.Frame.Visible = true end
@@ -575,6 +607,7 @@ function WindowMethods:Page(data)
 end
 
 function WindowMethods:SelectPage(name)
+    Library:CloseSettingsPopups()
     for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
     Library.OpenFrames = {}
     self.CurrentPage = name
@@ -695,6 +728,7 @@ function PageMethods:SubPage(data)
         self.Right.Position = UDim2.new(0.5, 55, 0, 0)
         self.Right.Size = UDim2.new(0.5, -55, 1, 0)
         function self:SelectSubPage(label)
+            Library:CloseSettingsPopups()
             for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
             Library.OpenFrames = {}
             self.CurrentSubPage = label
@@ -831,6 +865,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
     connect(row.MouseButton1Click, function() apply(not value) end)
     function control:Set(newValue, silent) apply(newValue, silent == true) end
     function control:Get() return value end
+    function control:SetVisibility(visible) row.Visible = visible == true end
     Library.Flags[flag] = value
     apply(value, true)
     return control
@@ -839,58 +874,61 @@ end
 
 function Library:CreateSettingsPopup(control, window, sectionObject)
     if control._settings_popup then return control._settings_popup end
-    local popup = new("CanvasGroup", {Parent = window.PopupLayer, Size = UDim2.fromOffset(250, 248), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9400})
-    round(popup, 6)
+    local popup = new("CanvasGroup", {Parent = window.PopupLayer, Size = UDim2.fromOffset(250, 248), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9400, Active = true})
+    popup:SetAttribute("SettingsPopupRoot", true)
+    round(popup, 7)
     stroke(popup, Library.Theme.Stroke, 0.08)
     local header = new("Frame", {Parent = popup, Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9401})
-    round(header, 6)
+    round(header, 7)
     local title = new("TextLabel", {Parent = header, Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = tostring(control._settings_name or "Settings"), TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9402})
-    local scroll = new("ScrollingFrame", {Parent = popup, Size = UDim2.new(1, -12, 1, -36), Position = UDim2.fromOffset(6, 32), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, ZIndex = 9401})
+    local scroll = new("ScrollingFrame", {Parent = popup, Size = UDim2.new(1, -12, 1, -36), Position = UDim2.fromOffset(6, 32), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true, ZIndex = 9401})
     local body = new("Frame", {Parent = scroll, Size = UDim2.new(1, -4, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 9401})
     local layout = new("UIListLayout", {Parent = body, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5)})
-    local pad = new("UIPadding", {Parent = body, PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingBottom = UDim.new(0, 6)})
+    new("UIPadding", {Parent = body, PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingBottom = UDim.new(0, 6)})
     connect(layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
         body.Size = UDim2.new(1, -4, 0, layout.AbsoluteContentSize.Y + 8)
         scroll.CanvasSize = UDim2.fromOffset(0, layout.AbsoluteContentSize.Y + 12)
     end)
     local settingsSection = setmetatable({Window = window, Body = body, Page = sectionObject and sectionObject.Page, Name = control._settings_name or "Settings", Side = 1}, SectionMethods)
     local popupObject = {Frame = popup, Body = body, Section = settingsSection, Built = false, Open = false}
-    local function copy_data(source)
-        local out = {}
-        for key, value in pairs(source or {}) do out[key] = value end
-        return out
-    end
-    local function build()
-        if popupObject.Built then return end
+
+    local function build(builder)
+        if type(builder) == "function" then control._settings_builder = builder end
+        if popupObject.Built then return popupObject end
+        if type(control._settings_builder) ~= "function" then return popupObject end
         popupObject.Built = true
-        for _, spec in ipairs(control._settings_specs or {}) do
-            if spec.kind == "color" then
-                local data = copy_data(spec.data)
-                data.Flag = tostring(data.Flag or data.Name or control._settings_name or "Color") .. "_settings_panel"
-                local row = settingsSection:Label({Name = data.Name or "Color"})
-                row:Colorpicker(data)
-            elseif spec.kind == "keybind" then
-                local data = copy_data(spec.data)
-                local row = settingsSection:Label({Name = data.Name or control._settings_name or "Keybind"})
-                Library:CreateKeybind({Window = window, Section = settingsSection, Parent = row.Instance, ParentFlag = nil, Name = data.Name or control._settings_name or "Keybind", Flag = tostring(data.Flag or control._settings_name or "Keybind") .. "_settings_panel", Default = data.Default or "None", Mode = data.Mode or "Toggle", Callback = data.Callback})
-            end
-        end
-        if type(control._settings_builder) == "function" then
-            pcall(control._settings_builder, settingsSection)
+        pcall(control._settings_builder, settingsSection)
+        return popupObject
+    end
+    popupObject.Build = build
+
+    -- The returned object is a real Section facade. Settings are independent
+    -- controls; inline colorpickers/keybinds are intentionally not copied here.
+    for _, methodName in ipairs({"Toggle", "Slider", "Dropdown", "Colorpicker", "Keybind", "Textbox", "Button", "Label"}) do
+        popupObject[methodName] = function(_, ...)
+            return settingsSection[methodName](settingsSection, ...)
         end
     end
+
     local function place()
         local layer = window.PopupLayer
-        local row_pos = control.Instance.AbsolutePosition
-        local layer_pos = layer.AbsolutePosition
-        local x = row_pos.X - layer_pos.X - 258
-        local y = row_pos.Y - layer_pos.Y
-        if x < 4 then x = row_pos.X - layer_pos.X + control.Instance.AbsoluteSize.X + 8 end
-        popup.Position = UDim2.fromOffset(x, math.max(4, y))
+        local anchor = control._settings_button or control.Instance
+        local layerPos = layer.AbsolutePosition
+        local anchorPos = anchor.AbsolutePosition
+        local popupSize = popup.AbsoluteSize
+        local layerSize = layer.AbsoluteSize
+        local x = anchorPos.X - layerPos.X + anchor.AbsoluteSize.X - popupSize.X
+        local y = anchorPos.Y - layerPos.Y + anchor.AbsoluteSize.Y + 6
+        if x < 6 then x = anchorPos.X - layerPos.X end
+        if layerSize.X > 0 and x + popupSize.X > layerSize.X - 6 then x = layerSize.X - popupSize.X - 6 end
+        if layerSize.Y > 0 and y + popupSize.Y > layerSize.Y - 6 then
+            y = anchorPos.Y - layerPos.Y - popupSize.Y - 6
+        end
+        popup.Position = UDim2.fromOffset(math.max(6, x), math.max(6, y))
     end
     local function close()
         popupObject.Open = false
-        Library.OpenFrames[popup] = nil
+        Library.SettingsPopups[popup] = nil
         tween(popup, {GroupTransparency = 1}, 0.12).Completed:Connect(function()
             if not popupObject.Open then popup.Visible = false end
         end)
@@ -898,13 +936,16 @@ function Library:CreateSettingsPopup(control, window, sectionObject)
     local function show()
         for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
         Library.OpenFrames = {}
+        Library:CloseSettingsPopups()
         build()
         popupObject.Open = true
-        place()
         popup.Visible = true
+        place()
         popup.GroupTransparency = 1
         tween(popup, {GroupTransparency = 0}, 0.14)
-        Library.OpenFrames[popup] = close
+        -- Keep the parent settings window outside the transient popup list so a
+        -- dropdown/keybind opened from inside it cannot close its parent.
+        Library.SettingsPopups[popup] = close
     end
     connect(control._settings_button.MouseButton1Click, function()
         if popupObject.Open then close() else show() end
@@ -913,9 +954,11 @@ function Library:CreateSettingsPopup(control, window, sectionObject)
         if popupObject.Open and popup.Visible then place() end
     end)
     connect(UIS.InputBegan, function(input)
-        if not popupObject.Open or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        if not popupObject.Open or (input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.MouseButton2) then return end
         task.defer(function()
-            if popupObject.Open and not inBounds(input.Position, popup) and not inBounds(input.Position, control.Instance) then close() end
+            local point = Vector2.new(input.Position.X, input.Position.Y)
+            local inAnchor = inBounds(point, control.Instance) or inBounds(point, control._settings_button)
+            if popupObject.Open and not pointInSettingsTree(popup, point) and not inAnchor then close() end
         end)
     end)
     control._settings_popup = popupObject
@@ -923,13 +966,14 @@ function Library:CreateSettingsPopup(control, window, sectionObject)
 end
 
 function Library:AttachSettings(control, window, sectionObject)
-    if control._settings_button then return end
+    if control._settings_button then return control._settings_popup end
     control._settings_button = new("ImageButton", {Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, -26, 0.5, -10), BackgroundTransparency = 1, BorderSizePixel = 0, Image = "rbxassetid://11385265073", ImageColor3 = Library.Theme.Dim, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 7, Name = "__settings"}, control.Instance)
     control._settings_button:SetAttribute("NoTheme", true)
     connect(control._settings_button.MouseEnter, function() tween(control._settings_button, {ImageColor3 = Library.Theme.Accent}, 0.12) end)
     connect(control._settings_button.MouseLeave, function() tween(control._settings_button, {ImageColor3 = Library.Theme.Dim}, 0.12) end)
     repositionRightWidgets(control.Instance)
     Library:CreateSettingsPopup(control, window, sectionObject)
+    return control._settings_popup
 end
 
 function SectionMethods:Toggle(data)
@@ -947,22 +991,21 @@ function SectionMethods:Toggle(data)
     control._settings_name = data.Name or flag
     function control:Settings(builder)
         self._settings_builder = builder
-        Library:AttachSettings(self, sectionWindow, sectionObject)
-        return self._settings_popup
+        local popupObject = Library:AttachSettings(self, sectionWindow, sectionObject)
+        if popupObject and type(builder) == "function" then popupObject:Build(builder) end
+        return popupObject
     end
     control.ShowSettings = control.Settings
     function control:Colorpicker(colorData)
         colorData = colorData or {}
         local result = Library:CreateColorpicker({Window = sectionWindow, Section = sectionObject, Parent = control.Instance, Name = colorData.Name, Flag = colorData.Flag or colorData.Name or flag .. "Color", Default = colorData.Default or Color3.new(1, 1, 1), Alpha = colorData.Alpha or colorData.Transparency or 0, Callback = colorData.Callback})
         control._settings_specs[#control._settings_specs + 1] = {kind = "color", data = colorData}
-        Library:AttachSettings(control, sectionWindow, sectionObject)
         return result
     end
     function control:Keybind(bindData)
         bindData = bindData or {}
         local result = Library:CreateKeybind({Window = sectionWindow, Section = sectionObject, Parent = control.Instance, ParentFlag = flag, Name = bindData.Name or data.Name or flag, Flag = bindData.Flag or bindData.Name or flag .. "Key", Default = bindData.Default or Enum.KeyCode.None, Mode = bindData.Mode or "Toggle", Callback = bindData.Callback})
         control._settings_specs[#control._settings_specs + 1] = {kind = "keybind", data = bindData}
-        Library:AttachSettings(control, sectionWindow, sectionObject)
         return result
     end
     return control
@@ -985,6 +1028,7 @@ function Library:CreateColorpicker(data)
     repositionRightWidgets(data.Parent)
     local popup = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(194, 162), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9200})
     popup:SetAttribute("NoTheme", true)
+    Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
     round(popup, 8)
     stroke(popup, Library.Theme.Stroke, 0.05)
     local palette = new("Frame", {Parent = popup, Size = UDim2.fromOffset(138, 108), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.fromHSV(hue, 1, 1), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 9201})
@@ -1031,12 +1075,18 @@ function Library:CreateColorpicker(data)
     local function close()
         open = false
         Library.OpenFrames[popup] = nil
-        tween(popup, {GroupTransparency = 1}, 0.12).Completed:Connect(function() if not open then popup.Visible = false end end)
+        tween(popup, {GroupTransparency = 1}, 0.12).Completed:Connect(function()
+            if not open then
+                popup.Visible = false
+                Library.PopupOwners[popup] = nil
+            end
+        end)
     end
     local function show()
         for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
         Library.OpenFrames = {}
         open = true
+        Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
         place()
         apply(true)
         popup.Visible = true
@@ -1048,18 +1098,25 @@ function Library:CreateColorpicker(data)
 
     local ctxOpen = false
     local ctx = new("CanvasGroup", {Parent = data.Window.PopupLayer, Size = UDim2.fromOffset(80, 26), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9300})
+    Library.PopupOwners[ctx] = findSettingsOwner(data.Parent)
     round(ctx, 4)
     local ctxCopy = new("TextButton", {Parent = ctx, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Copy", TextColor3 = Color3.fromRGB(230, 230, 230), TextSize = 11, AutoButtonColor = false, ZIndex = 9301})
     local function ctxClose()
         if not ctxOpen then return end
         ctxOpen = false
         Library.OpenFrames[ctx] = nil
-        tween(ctx, {GroupTransparency = 1}, 0.1).Completed:Connect(function() if not ctxOpen then ctx.Visible = false end end)
+        tween(ctx, {GroupTransparency = 1}, 0.1).Completed:Connect(function()
+            if not ctxOpen then
+                ctx.Visible = false
+                Library.PopupOwners[ctx] = nil
+            end
+        end)
     end
     local function ctxShow()
         for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
         Library.OpenFrames = {}
         ctxOpen = true
+        Library.PopupOwners[ctx] = findSettingsOwner(data.Parent)
         ctx.Position = UDim2.fromOffset(swatch.AbsolutePosition.X - data.Window.PopupLayer.AbsolutePosition.X, swatch.AbsolutePosition.Y - data.Window.PopupLayer.AbsolutePosition.Y + swatch.AbsoluteSize.Y + 4)
         ctx.Visible = true
         ctx.GroupTransparency = 1
@@ -1147,6 +1204,7 @@ function Library:CreateKeybind(data)
     local kbIcon = new("ImageLabel", {Size = UDim2.fromOffset(11, 11), Position = UDim2.new(0, 5, 0.5, -5), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 6}, shell)
     local button = new("TextButton", {Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(19, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = bind.Value, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 10, AutoButtonColor = false, ZIndex = 6, TextXAlignment = Enum.TextXAlignment.Center}, shell)
     local popup = new("CanvasGroup", {Size = UDim2.fromOffset(88, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9100, ClipsDescendants = true}, data.Window.PopupLayer)
+    Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
     local popupBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9100}, popup)
     round(popupBg, 4)
     local popupContent = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.fromOffset(0, 2), BackgroundTransparency = 1, ZIndex = 9101}, popup)
@@ -1186,7 +1244,12 @@ function Library:CreateKeybind(data)
     local function closePopup()
         open = false
         Library.OpenFrames[popup] = nil
-        tween(popup, {Size = UDim2.fromOffset(88, 0), GroupTransparency = 1}, 0.12).Completed:Connect(function() if not open then popup.Visible = false end end)
+        tween(popup, {Size = UDim2.fromOffset(88, 0), GroupTransparency = 1}, 0.12).Completed:Connect(function()
+            if not open then
+                popup.Visible = false
+                Library.PopupOwners[popup] = nil
+            end
+        end)
     end
     local function placePopup()
         popup.Position = UDim2.fromOffset(shell.AbsolutePosition.X - data.Window.PopupLayer.AbsolutePosition.X, shell.AbsolutePosition.Y - data.Window.PopupLayer.AbsolutePosition.Y + shell.AbsoluteSize.Y + 3)
@@ -1195,6 +1258,7 @@ function Library:CreateKeybind(data)
         for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
         Library.OpenFrames = {}
         open = true
+        Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
         placePopup()
         popup.Visible = true
         tween(popup, {Size = UDim2.fromOffset(88, 74), GroupTransparency = 0}, 0.14)
@@ -1308,7 +1372,7 @@ function SectionMethods:Slider(data, minArg, maxArg, defaultArg, suffixArg, call
     round(fill, 3)
     local fillGlow = softOuterGlow(fill, Library.Theme.Accent, 5, 1, 0.42)
     for index, glow in ipairs(fillGlow) do
-        glow.Transparency = startRatio > 0 and (0.48 + index * 0.09) or 1
+        glow.Transparency = startRatio > 0 and math.min(1, 0.86 + (index - 1) * 0.035) or 1
     end
     local knob = new("Frame", {Size = UDim2.fromOffset(12, 12), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(startRatio, 0, 0.5, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Visible = false, BorderSizePixel = 0}, track)
     round(knob, 100)
@@ -1332,7 +1396,7 @@ function SectionMethods:Slider(data, minArg, maxArg, defaultArg, suffixArg, call
         tween(fill, {Size = UDim2.new(ratio, 0, 1, 0)}, speed)
         for index, glow in ipairs(fillGlow) do
             glow.Color = Library.Theme.Accent
-            local transparency = ratio > 0 and math.min(0.94, 0.42 + index * 0.1) or 1
+            local transparency = ratio > 0 and math.min(1, 0.86 + (index - 1) * 0.035) or 1
             tween(glow, {Transparency = transparency}, speed)
         end
         tween(knob, {Position = UDim2.new(ratio, 0, 0.5, 0)}, speed)
@@ -1377,6 +1441,7 @@ function SectionMethods:Slider(data, minArg, maxArg, defaultArg, suffixArg, call
     local slider_obj = {Instance = holder}
     function slider_obj:Set(v) apply(v, true, true) end
     function slider_obj:Get() return value end
+    function slider_obj:SetVisibility(visible) holder.Visible = visible == true end
     function slider_obj:SetMax(nm)
         local nn = tonumber(nm)
         if not nn then return end
@@ -1414,12 +1479,18 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     local holder = new("Frame", {Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, ZIndex = 100}, self.Body)
     new("TextLabel", {Size = UDim2.new(1, 0, 0, 12), BackgroundTransparency = 1, Text = data.Name or flag, TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, holder)
     local box = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 14), BackgroundTransparency = 1, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 100}, holder)
-    local boxBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 100}, box)
-    round(boxBg, 4)
-    stroke(boxBg, Color3.fromRGB(55, 57, 65), 0.08)
-    local selected = new("TextLabel", {Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(9, 0), BackgroundTransparency = 1, Text = type(current) == "table" and table.concat(current, ", ") or text(current), TextColor3 = Library.Theme.Text, TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 101}, box)
-    local arrow = new("TextLabel", {Size = UDim2.fromOffset(18, 20), Position = UDim2.new(1, -23, 0, 1), BackgroundTransparency = 1, Text = "⌄", TextColor3 = Library.Theme.Dim, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 102}, box)
+    local boxBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 100}, box)
+    local boxLine = new("Frame", {Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.18, BorderSizePixel = 0, ZIndex = 100}, boxBg)
+    local selected = new("TextLabel", {Size = UDim2.new(1, -30, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Text = type(current) == "table" and table.concat(current, ", ") or text(current), TextColor3 = Library.Theme.Text, TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 101}, box)
+    local arrow = new("Frame", {Size = UDim2.fromOffset(16, 18), Position = UDim2.new(1, -18, 0, 2), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 102}, box)
+    local arrowLeft = new("Frame", {Size = UDim2.fromOffset(6, 1), Position = UDim2.fromOffset(2, 8), Rotation = 35, BackgroundColor3 = Library.Theme.Dim, BorderSizePixel = 0, ZIndex = 103}, arrow)
+    local arrowRight = new("Frame", {Size = UDim2.fromOffset(6, 1), Position = UDim2.fromOffset(8, 8), Rotation = -35, BackgroundColor3 = Library.Theme.Dim, BorderSizePixel = 0, ZIndex = 103}, arrow)
+    local function setArrow(isOpen)
+        tween(arrowLeft, {Rotation = isOpen and -35 or 35, BackgroundColor3 = isOpen and Library.Theme.Accent or Library.Theme.Dim}, 0.12)
+        tween(arrowRight, {Rotation = isOpen and 35 or -35, BackgroundColor3 = isOpen and Library.Theme.Accent or Library.Theme.Dim}, 0.12)
+    end
     local list = new("CanvasGroup", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ClipsDescendants = true, GroupTransparency = 1, ZIndex = 9001}, self.Window.PopupLayer)
+    Library.PopupOwners[list] = findSettingsOwner(self.Body)
     round(list, 4)
     local listBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9001}, list)
     round(listBg, 4)
@@ -1472,13 +1543,20 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     end
     local function close()
         open = false
+        setArrow(false)
         Library.OpenFrames[list] = nil
-        tween(list, {Size = UDim2.fromOffset(list.AbsoluteSize.X, 0), GroupTransparency = 1}, 0.12).Completed:Connect(function() if not open then list.Visible = false end end)
+        tween(list, {Size = UDim2.fromOffset(list.AbsoluteSize.X, 0), GroupTransparency = 1}, 0.12).Completed:Connect(function()
+            if not open then
+                list.Visible = false
+                Library.PopupOwners[list] = nil
+            end
+        end)
     end
     local function openList()
         for _, frame in pairs(Library.OpenFrames) do pcall(frame) end
         Library.OpenFrames = {}
         open = true
+        Library.PopupOwners[list] = findSettingsOwner(self.Body)
         list.Visible = true
         list.GroupTransparency = 1
         place()
@@ -1506,17 +1584,22 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
             end)
         end
     end
+    setArrow(false)
     connect(box.MouseButton1Click, function()
         if open then close() else openList() end
-        arrow.Text = open and "⌃" or "⌄"
+        setArrow(open)
     end)
     connect(box.MouseEnter, function()
         tween(selected, {TextColor3 = Library.Theme.Text}, 0.1)
-        tween(arrow, {TextColor3 = Library.Theme.Accent}, 0.1)
+        tween(arrowLeft, {BackgroundColor3 = Library.Theme.Accent}, 0.1)
+        tween(arrowRight, {BackgroundColor3 = Library.Theme.Accent}, 0.1)
+        tween(boxLine, {BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0}, 0.1)
     end)
     connect(box.MouseLeave, function()
         tween(selected, {TextColor3 = Library.Theme.Text}, 0.1)
-        tween(arrow, {TextColor3 = Library.Theme.Dim}, 0.1)
+        tween(arrowLeft, {BackgroundColor3 = open and Library.Theme.Accent or Library.Theme.Dim}, 0.1)
+        tween(arrowRight, {BackgroundColor3 = open and Library.Theme.Accent or Library.Theme.Dim}, 0.1)
+        tween(boxLine, {BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.18}, 0.1)
     end)
     connect(RunService.RenderStepped, function() if open and list.Visible then place() end end)
     connect(UIS.InputBegan, function(input)
@@ -1542,6 +1625,7 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     function object:Get() return Library.Flags[flag] end
     function object:Refresh(newOptions) options = newOptions or options rebuild() updateValue(true) end
     function object:SetItems(newOptions) options = newOptions or options rebuild() updateValue(true) end
+    function object:SetVisibility(visible) holder.Visible = visible == true end
     return object
 end
 
@@ -2745,18 +2829,29 @@ function Library:_ApplyAspectRatio()
         if self.AspectCamera == camera and self.AspectBaseFov then
             camera.FieldOfView = self.AspectBaseFov
         end
+        self.AspectLastFov = nil
         return
     end
+    local currentFov = tonumber(camera.FieldOfView) or 70
     if self.AspectCamera ~= camera or not self.AspectBaseFov then
         self.AspectCamera = camera
-        self.AspectBaseFov = camera.FieldOfView
+        self.AspectBaseFov = currentFov
+        self.AspectLastFov = nil
+    elseif self.AspectLastFov and math.abs(currentFov - self.AspectLastFov) > 0.05 then
+        -- The game changed FOV (scope/zoom/camera state). Keep the aspect
+        -- multiplier, but use the new game FOV as the base.
+        self.AspectBaseFov = currentFov
     end
     local viewport = camera.ViewportSize
     local actual = viewport.Y > 0 and viewport.X / viewport.Y or (16 / 9)
     local target = math.clamp(tonumber(self.AspectRatio) or 1.58, 1.25, 2.2)
-    local base_tan = math.tan(math.rad(self.AspectBaseFov) * 0.5)
-    local target_fov = math.deg(2 * math.atan(base_tan * actual / target))
-    camera.FieldOfView = math.clamp(target_fov, 1, 120)
+    local baseTan = math.tan(math.rad(self.AspectBaseFov) * 0.5)
+    -- FieldOfView is vertical. Horizontal FOV is derived from viewport
+    -- aspect, so target/actual is the correct stretch direction.
+    local targetFov = math.deg(2 * math.atan(baseTan * target / actual))
+    targetFov = math.clamp(targetFov, 1, 120)
+    camera.FieldOfView = targetFov
+    self.AspectLastFov = targetFov
 end
 
 function Library:SetAspectRatio(value, enabled)
@@ -2771,6 +2866,7 @@ function Library:SetAspectRatioEnabled(value)
         self:_ApplyAspectRatio()
         self.AspectCamera = nil
         self.AspectBaseFov = nil
+        self.AspectLastFov = nil
     else
         self:_ApplyAspectRatio()
     end
