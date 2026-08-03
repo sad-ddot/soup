@@ -2020,7 +2020,7 @@ function Library:WeaponSkinGrid(params)
 
     local function resetSource()
         if activeButton and activeButton.Parent then
-            activeButton.BackgroundColor3 = Library.Theme.Input
+            activeButton.BackgroundColor3 = Library.Theme.Header
             if activeStroke and activeStroke.Parent then
                 activeStroke.Color = Library.Theme.Stroke
                 activeStroke.Transparency = 0.18
@@ -2086,7 +2086,7 @@ function Library:WeaponSkinGrid(params)
                 local on = selected ~= nil and tostring(selected) == tostring(skinName)
                 data.Stroke.Color = on and Library.Theme.Accent or Library.Theme.Stroke
                 data.Stroke.Transparency = on and 0 or 0.25
-                data.Tile.BackgroundColor3 = on and Library.Theme.ControlHover or Library.Theme.Input
+                data.Tile.BackgroundColor3 = Library.Theme.Header
                 data.Label.TextColor3 = on and Library.Theme.Accent or Library.Theme.Text
             end
         end
@@ -2099,7 +2099,7 @@ function Library:WeaponSkinGrid(params)
         end
         object:Close()
         activeRow, activeName, activeButton, activeStroke = row, item.Name, button, item._Stroke
-        button.BackgroundColor3 = Library.Theme.ControlHover
+        button.BackgroundColor3 = Library.Theme.Header
         if activeStroke then activeStroke.Color = Library.Theme.Accent; activeStroke.Transparency = 0 end
         title.Text = tostring(row.Title or row.Key or "Items") .. " / " .. tostring(item.Label or item.Name)
         item.SkinTiles = {}
@@ -2107,7 +2107,7 @@ function Library:WeaponSkinGrid(params)
         for index, skin in ipairs(skins) do
             local skinName = tostring(skin.Name or "Default")
             local skinLabel = tostring(skin.Label or skinName)
-            local tile = new("TextButton", {Size = UDim2.fromOffset(58, 72), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Selectable = false, LayoutOrder = index, ZIndex = 9503}, skinScroll)
+            local tile = new("TextButton", {Size = UDim2.fromOffset(58, 72), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Selectable = false, LayoutOrder = index, ZIndex = 9503}, skinScroll)
             round(tile, 4)
             local tileStroke = stroke(tile, Library.Theme.Stroke, 0.24)
             local iconValue = type(skin.Icon) == "string" and skin.Icon or ""
@@ -2115,9 +2115,6 @@ function Library:WeaponSkinGrid(params)
             local placeholder = new("TextLabel", {Parent = tile, Size = UDim2.fromOffset(50, 45), Position = UDim2.fromOffset(4, 3), BackgroundTransparency = 1, Text = string.sub(skinLabel, 1, 5), TextColor3 = Library.Theme.Dim, TextSize = 9, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
             local label = new("TextLabel", {Parent = tile, Size = UDim2.new(1, -4, 0, 15), Position = UDim2.new(0, 2, 1, -17), BackgroundTransparency = 1, Text = skinLabel, TextColor3 = Library.Theme.Text, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9505})
             item.SkinTiles[skinName] = {Tile = tile, Stroke = tileStroke, Label = label, Placeholder = placeholder, Image = image}
-            tile.MouseEnter:Connect(function()
-                if selectedFor(row, item) ~= skinName then tile.BackgroundColor3 = Library.Theme.ControlHover end
-            end)
             tile.MouseLeave:Connect(function() paintSkinTiles(row, item) end)
             tile.MouseButton1Click:Connect(function()
                 if type(params.OnSelect) == "function" then pcall(params.OnSelect, row.Key, item.Name, skinName, item) end
@@ -2146,7 +2143,7 @@ function Library:WeaponSkinGrid(params)
         rows[#rows + 1] = rowData
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() strip.CanvasSize = UDim2.fromOffset(layout.AbsoluteContentSize.X + 10, 0) end)
         for itemIndex, item in ipairs(rowData.Items) do
-            local button = new("TextButton", {Parent = strip, Size = UDim2.fromOffset(64, 60), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Active = true, Selectable = false, LayoutOrder = itemIndex, ZIndex = 9503})
+            local button = new("TextButton", {Parent = strip, Size = UDim2.fromOffset(64, 60), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Active = true, Selectable = false, LayoutOrder = itemIndex, ZIndex = 9503})
             round(button, 4)
             local buttonStroke = stroke(button, Library.Theme.Stroke, 0.2)
             local iconValue = type(item.Icon) == "string" and item.Icon or ""
@@ -2156,12 +2153,6 @@ function Library:WeaponSkinGrid(params)
             item._ImageObject = image
             item._Placeholder = placeholder
             item._LabelObject = itemLabel
-            button.MouseEnter:Connect(function()
-                if activeButton ~= button then button.BackgroundColor3 = Library.Theme.ControlHover; buttonStroke.Color = Library.Theme.Accent end
-            end)
-            button.MouseLeave:Connect(function()
-                if activeButton == button then button.BackgroundColor3 = Library.Theme.ControlHover; buttonStroke.Color = Library.Theme.Accent else button.BackgroundColor3 = Library.Theme.Control; buttonStroke.Color = Library.Theme.Stroke end
-            end)
             button.MouseButton1Click:Connect(function() openSkinPopup(rowData, item, button) end)
             item._Button = button
             item._Stroke = buttonStroke
