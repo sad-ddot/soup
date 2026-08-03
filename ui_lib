@@ -2086,7 +2086,7 @@ function Library:WeaponSkinGrid(params)
 
     local function selectedFor(row, item)
         if type(params.GetSelected) == "function" then
-            local ok, value = pcall(params.GetSelected, row.Key, item.Name)
+            local ok, value = pcall(params.GetSelected, row.Key, item.Name, item)
             if ok then return value end
         end
         return nil
@@ -2137,7 +2137,7 @@ function Library:WeaponSkinGrid(params)
             tile.MouseEnter:Connect(function() if selectedFor(row, item) ~= skin.Name then tile.BackgroundColor3 = Library.Theme.ControlHover end end)
             tile.MouseLeave:Connect(function() paintSkinTiles(row, item) end)
             tile.MouseButton1Click:Connect(function()
-                if type(params.OnSelect) == "function" then pcall(params.OnSelect, row.Key, item.Name, skin.Name) end
+                if type(params.OnSelect) == "function" then pcall(params.OnSelect, row.Key, item.Name, skin.Name, item) end
                 paintSkinTiles(row, item)
             end)
         end
