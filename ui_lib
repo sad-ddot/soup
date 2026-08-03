@@ -2002,21 +2002,19 @@ function Library:WeaponSkinGrid(params)
     params = params or {}
     local section = params.Section
     if not (section and section.Body and section.Window and section.Window.PopupLayer) then return nil end
-    local host = new("Frame", {Size = UDim2.new(1, 0, 0, 0), BackgroundColor3 = Library.Theme.Panel, BackgroundTransparency = 0.12, BorderSizePixel = 0, LayoutOrder = params.LayoutOrder or 80}, section.Body)
-    round(host, 6)
-    stroke(host, Library.Theme.Stroke, 0.34)
-    local panel = new("CanvasGroup", {Parent = section.Window.PopupLayer, Size = UDim2.fromOffset(360, 246), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9500, Active = true, ClipsDescendants = true})
-    round(panel, 7)
-    stroke(panel, Library.Theme.AccentDk, 0.08)
-    local header = new("Frame", {Parent = panel, Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9501})
-    round(header, 7)
-    local headerLine = new("Frame", {Parent = header, Size = UDim2.new(1, -18, 0, 1), Position = UDim2.fromOffset(9, 31), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.28, BorderSizePixel = 0, ZIndex = 9502})
-    local title = new("TextLabel", {Parent = header, Size = UDim2.new(1, -44, 1, 0), Position = UDim2.fromOffset(11, 0), BackgroundTransparency = 1, TextColor3 = Library.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9502})
-    local closeButton = new("TextButton", {Parent = header, Size = UDim2.fromOffset(25, 25), Position = UDim2.new(1, -31, 0, 3), BackgroundTransparency = 1, Text = "×", TextColor3 = Library.Theme.Dim, TextSize = 17, AutoButtonColor = false, Selectable = false, ZIndex = 9503})
-    local skinScroll = new("ScrollingFrame", {Parent = panel, Size = UDim2.new(1, -14, 1, -47), Position = UDim2.fromOffset(7, 39), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true, ZIndex = 9501})
-    local skinLayout = new("UIGridLayout", {Parent = skinScroll, CellSize = UDim2.fromOffset(66, 82), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder})
-    new("UIPadding", {Parent = skinScroll, PaddingLeft = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 6)})
-    local noSkins = new("TextLabel", {Parent = panel, Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 92), BackgroundTransparency = 1, Text = "No skins found", TextColor3 = Library.Theme.Dim, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Center, Visible = false, ZIndex = 9502})
+    local host = new("Frame", {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, LayoutOrder = params.LayoutOrder or 80}, section.Body)
+    local panel = new("CanvasGroup", {Parent = section.Window.PopupLayer, Size = UDim2.fromOffset(320, 210), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9500, Active = true, ClipsDescendants = true})
+    round(panel, 6)
+    stroke(panel, Library.Theme.Stroke, 0.08)
+    local header = new("Frame", {Parent = panel, Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9501})
+    round(header, 6)
+    new("Frame", {Parent = header, Size = UDim2.new(1, -16, 0, 1), Position = UDim2.fromOffset(8, 29), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 9502})
+    local title = new("TextLabel", {Parent = header, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9502})
+    local closeButton = new("TextButton", {Parent = header, Size = UDim2.fromOffset(23, 23), Position = UDim2.new(1, -29, 0, 3), BackgroundTransparency = 1, Text = "×", TextColor3 = Library.Theme.Dim, TextSize = 16, AutoButtonColor = false, Selectable = false, ZIndex = 9503})
+    local skinScroll = new("ScrollingFrame", {Parent = panel, Size = UDim2.new(1, -12, 1, -40), Position = UDim2.fromOffset(6, 34), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true, ZIndex = 9501})
+    local skinLayout = new("UIGridLayout", {Parent = skinScroll, CellSize = UDim2.fromOffset(58, 72), CellPadding = UDim2.fromOffset(5, 5), SortOrder = Enum.SortOrder.LayoutOrder})
+    new("UIPadding", {Parent = skinScroll, PaddingLeft = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 5)})
+    local noSkins = new("TextLabel", {Parent = panel, Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 90), BackgroundTransparency = 1, Text = "No skins found", TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, Visible = false, ZIndex = 9502})
     local activeRow, activeName, activeButton, activeStroke = nil, nil, nil, nil
     local rows = {}
     local object = {Host = host, Panel = panel, Rows = rows}
@@ -2051,12 +2049,12 @@ function Library:WeaponSkinGrid(params)
         local lp = section.Window.PopupLayer.AbsolutePosition
         local bp = button.AbsolutePosition
         local layer = section.Window.PopupLayer.AbsoluteSize
-        local width = panel.AbsoluteSize.X > 0 and panel.AbsoluteSize.X or 360
-        local height = panel.AbsoluteSize.Y > 0 and panel.AbsoluteSize.Y or 246
+        local width = panel.AbsoluteSize.X > 0 and panel.AbsoluteSize.X or 320
+        local height = panel.AbsoluteSize.Y > 0 and panel.AbsoluteSize.Y or 210
         local x = bp.X - lp.X
-        local y = bp.Y - lp.Y + button.AbsoluteSize.Y + 6
+        local y = bp.Y - lp.Y + button.AbsoluteSize.Y + 5
         if layer.X > 0 and x + width > layer.X - 6 then x = layer.X - width - 6 end
-        if layer.Y > 0 and y + height > layer.Y - 6 then y = bp.Y - lp.Y - height - 6 end
+        if layer.Y > 0 and y + height > layer.Y - 6 then y = bp.Y - lp.Y - height - 5 end
         panel.Position = UDim2.fromOffset(math.max(6, x), math.max(6, y))
     end
 
@@ -2065,6 +2063,13 @@ function Library:WeaponSkinGrid(params)
         local p = button.AbsolutePosition + button.AbsoluteSize / 2
         local q, z = row.Strip.AbsolutePosition, row.Strip.AbsoluteSize
         return p.X >= q.X and p.X <= q.X + z.X and p.Y >= q.Y and p.Y <= q.Y + z.Y
+    end
+
+    local function inAnySource(position)
+        for _, row in ipairs(rows) do
+            if row.Strip and inBounds(position, row.Strip) then return true end
+        end
+        return false
     end
 
     local function selectedFor(row, item)
@@ -2082,38 +2087,34 @@ function Library:WeaponSkinGrid(params)
                 local on = selected ~= nil and tostring(selected) == tostring(skinName)
                 data.Stroke.Color = on and Library.Theme.Accent or Library.Theme.Stroke
                 data.Stroke.Transparency = on and 0 or 0.25
-                data.Tile.BackgroundColor3 = on and Library.Theme.ControlHover or Library.Theme.Control
+                data.Tile.BackgroundColor3 = on and Library.Theme.ControlHover or Library.Theme.Input
                 data.Label.TextColor3 = on and Library.Theme.Accent or Library.Theme.Text
             end
         end
     end
 
     local function openSkinPopup(row, item, button)
-        if activeRow == row.Key and activeName == item.Name and panel.Visible then
+        if activeRow and activeRow.Key == row.Key and activeName == item.Name and panel.Visible then
             object:Close()
             return
         end
         object:Close()
-        activeRow, activeName, activeButton, activeStroke = row.Key, item.Name, button, item._Stroke
+        activeRow, activeName, activeButton, activeStroke = row, item.Name, button, item._Stroke
         button.BackgroundColor3 = Library.Theme.ControlHover
         if activeStroke then activeStroke.Color = Library.Theme.Accent; activeStroke.Transparency = 0 end
-        title.Text = tostring(row.Title or row.Key or "Items") .. "  /  " .. tostring(item.Label or item.Name)
+        title.Text = tostring(row.Title or row.Key or "Items") .. " / " .. tostring(item.Label or item.Name)
         item.SkinTiles = {}
         local skins = type(item.Skins) == "table" and item.Skins or {}
-        local realCount = 0
         for index, skin in ipairs(skins) do
             local skinName = tostring(skin.Name or "Default")
             local skinLabel = tostring(skin.Label or skinName)
-            if skinName ~= "Default" then realCount += 1 end
-            local tile = new("TextButton", {Size = UDim2.fromOffset(66, 82), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Selectable = false, LayoutOrder = index, ZIndex = 9503}, skinScroll)
-            round(tile, 5)
-            local tileStroke = stroke(tile, Library.Theme.Stroke, 0.25)
-            local iconHolder = new("Frame", {Parent = tile, Size = UDim2.fromOffset(58, 55), Position = UDim2.fromOffset(4, 4), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, ZIndex = 9504})
-            round(iconHolder, 4)
+            local tile = new("TextButton", {Size = UDim2.fromOffset(58, 72), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Selectable = false, LayoutOrder = index, ZIndex = 9503}, skinScroll)
+            round(tile, 4)
+            local tileStroke = stroke(tile, Library.Theme.Stroke, 0.24)
             local iconValue = type(skin.Icon) == "string" and skin.Icon or ""
-            local image = new("ImageLabel", {Parent = iconHolder, Size = UDim2.new(1, -6, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundTransparency = 1, Image = iconValue, ScaleType = Enum.ScaleType.Fit, ZIndex = 9505})
-            local placeholder = new("TextLabel", {Parent = iconHolder, Size = UDim2.new(1, -6, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundTransparency = 1, Text = string.upper(string.sub(skinLabel, 1, 5)), TextColor3 = Library.Theme.Dim, TextSize = 10, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9506})
-            local label = new("TextLabel", {Parent = tile, Size = UDim2.new(1, -6, 0, 17), Position = UDim2.new(0, 3, 1, -19), BackgroundTransparency = 1, Text = skinLabel, TextColor3 = Library.Theme.Text, TextSize = 9, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9506})
+            local image = new("ImageLabel", {Parent = tile, Size = UDim2.fromOffset(50, 45), Position = UDim2.fromOffset(4, 3), BackgroundTransparency = 1, Image = iconValue, ScaleType = Enum.ScaleType.Fit, ZIndex = 9504})
+            local placeholder = new("TextLabel", {Parent = tile, Size = UDim2.fromOffset(50, 45), Position = UDim2.fromOffset(4, 3), BackgroundTransparency = 1, Text = string.upper(string.sub(skinLabel, 1, 5)), TextColor3 = Library.Theme.Dim, TextSize = 9, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
+            local label = new("TextLabel", {Parent = tile, Size = UDim2.new(1, -4, 0, 15), Position = UDim2.new(0, 2, 1, -17), BackgroundTransparency = 1, Text = skinLabel, TextColor3 = Library.Theme.Text, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9505})
             item.SkinTiles[skinName] = {Tile = tile, Stroke = tileStroke, Label = label, Placeholder = placeholder, Image = image}
             tile.MouseEnter:Connect(function()
                 if selectedFor(row, item) ~= skinName then tile.BackgroundColor3 = Library.Theme.ControlHover end
@@ -2124,35 +2125,35 @@ function Library:WeaponSkinGrid(params)
                 paintSkinTiles(row, item)
             end)
         end
-        noSkins.Visible = realCount == 0
-        skinScroll.CanvasSize = UDim2.fromOffset(0, skinLayout.AbsoluteContentSize.Y + 12)
+        noSkins.Visible = #skins == 0
+        skinScroll.CanvasSize = UDim2.fromOffset(0, skinLayout.AbsoluteContentSize.Y + 10)
         panel.Visible = true
         panel.GroupTransparency = 1
         placePanel(button)
-        tween(panel, {GroupTransparency = 0}, 0.14)
+        tween(panel, {GroupTransparency = 0}, 0.12)
         paintSkinTiles(row, item)
     end
 
     local function addRow(row)
-        local rowLabel = new("TextLabel", {Parent = host, Size = UDim2.new(1, -18, 0, 17), Position = UDim2.fromOffset(9, 0), BackgroundTransparency = 1, Text = string.upper(tostring(row.Title or row.Key or "Items")), TextColor3 = Library.Theme.Dim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = #rows * 2 + 1})
-        local strip = new("ScrollingFrame", {Parent = host, Size = UDim2.new(1, -14, 0, 78), Position = UDim2.fromOffset(7, 20), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 0.04, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, ScrollingDirection = Enum.ScrollingDirection.X, CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true, LayoutOrder = #rows * 2 + 2})
-        round(strip, 5)
-        stroke(strip, Library.Theme.Stroke, 0.18)
-        local layout = new("UIListLayout", {Parent = strip, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center})
-        new("UIPadding", {Parent = strip, PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4)})
+        local index = #rows + 1
+        local y = (index - 1) * 88
+        new("TextLabel", {Parent = host, Size = UDim2.new(1, -12, 0, 15), Position = UDim2.fromOffset(6, y), BackgroundTransparency = 1, Text = string.upper(tostring(row.Title or row.Key or "Items")), TextColor3 = Library.Theme.Dim, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left})
+        local strip = new("ScrollingFrame", {Parent = host, Size = UDim2.new(1, -8, 0, 68), Position = UDim2.fromOffset(4, y + 17), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 0.02, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, ScrollingDirection = Enum.ScrollingDirection.X, CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true})
+        round(strip, 4)
+        stroke(strip, Library.Theme.Stroke, 0.28)
+        local layout = new("UIListLayout", {Parent = strip, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5), VerticalAlignment = Enum.VerticalAlignment.Center})
+        new("UIPadding", {Parent = strip, PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3)})
         local rowData = {Key = row.Key, Title = row.Title, Strip = strip, Items = row.Items or {}, Layout = layout}
         rows[#rows + 1] = rowData
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() strip.CanvasSize = UDim2.fromOffset(layout.AbsoluteContentSize.X + 12, 0) end)
-        for index, item in ipairs(rowData.Items) do
-            local button = new("TextButton", {Parent = strip, Size = UDim2.fromOffset(70, 68), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Active = true, Selectable = false, LayoutOrder = index, ZIndex = 9503})
-            round(button, 5)
-            local buttonStroke = stroke(button, Library.Theme.Stroke, 0.18)
-            local iconHolder = new("Frame", {Parent = button, Size = UDim2.fromOffset(60, 48), Position = UDim2.fromOffset(5, 4), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, ZIndex = 9504})
-            round(iconHolder, 4)
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() strip.CanvasSize = UDim2.fromOffset(layout.AbsoluteContentSize.X + 10, 0) end)
+        for itemIndex, item in ipairs(rowData.Items) do
+            local button = new("TextButton", {Parent = strip, Size = UDim2.fromOffset(64, 60), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Active = true, Selectable = false, LayoutOrder = itemIndex, ZIndex = 9503})
+            round(button, 4)
+            local buttonStroke = stroke(button, Library.Theme.Stroke, 0.2)
             local iconValue = type(item.Icon) == "string" and item.Icon or ""
-            local image = new("ImageLabel", {Parent = iconHolder, Size = UDim2.new(1, -4, 1, -4), Position = UDim2.fromOffset(2, 2), BackgroundTransparency = 1, Image = iconValue, ScaleType = Enum.ScaleType.Fit, ZIndex = 9505})
-            local placeholder = new("TextLabel", {Parent = iconHolder, Size = UDim2.new(1, -6, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundTransparency = 1, Text = string.upper(string.sub(tostring(item.Label or item.Name or "Item"), 1, 5)), TextColor3 = Library.Theme.Dim, TextSize = 9, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9506})
-            local itemLabel = new("TextLabel", {Parent = button, Size = UDim2.new(1, -6, 0, 14), Position = UDim2.new(0, 3, 1, -16), BackgroundTransparency = 1, Text = tostring(item.Label or item.Name or "Item"), TextColor3 = Library.Theme.Text, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9506})
+            local image = new("ImageLabel", {Parent = button, Size = UDim2.fromOffset(54, 42), Position = UDim2.fromOffset(5, 3), BackgroundTransparency = 1, Image = iconValue, ScaleType = Enum.ScaleType.Fit, ZIndex = 9504})
+            local placeholder = new("TextLabel", {Parent = button, Size = UDim2.fromOffset(54, 42), Position = UDim2.fromOffset(5, 3), BackgroundTransparency = 1, Text = string.upper(string.sub(tostring(item.Label or item.Name or "Item"), 1, 5)), TextColor3 = Library.Theme.Dim, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
+            local itemLabel = new("TextLabel", {Parent = button, Size = UDim2.new(1, -4, 0, 13), Position = UDim2.new(0, 2, 1, -15), BackgroundTransparency = 1, Text = tostring(item.Label or item.Name or "Item"), TextColor3 = Library.Theme.Text, TextSize = 7, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9505})
             item._ImageObject = image
             item._Placeholder = placeholder
             item._LabelObject = itemLabel
@@ -2160,7 +2161,7 @@ function Library:WeaponSkinGrid(params)
                 if activeButton ~= button then button.BackgroundColor3 = Library.Theme.ControlHover; buttonStroke.Color = Library.Theme.Accent end
             end)
             button.MouseLeave:Connect(function()
-                if activeButton == button then button.BackgroundColor3 = Library.Theme.ControlHover; buttonStroke.Color = Library.Theme.Accent else button.BackgroundColor3 = Library.Theme.Input; buttonStroke.Color = Library.Theme.Stroke end
+                if activeButton == button then button.BackgroundColor3 = Library.Theme.ControlHover; buttonStroke.Color = Library.Theme.Accent else button.BackgroundColor3 = Library.Theme.Control; buttonStroke.Color = Library.Theme.Stroke end
             end)
             button.MouseButton1Click:Connect(function() openSkinPopup(rowData, item, button) end)
             item._Button = button
@@ -2177,14 +2178,14 @@ function Library:WeaponSkinGrid(params)
         rows = {}
         object.Rows = rows
         for _, row in ipairs(newRows or {}) do addRow(row) end
-        host.Size = UDim2.new(1, 0, 0, #rows * 104 + 8)
+        host.Size = UDim2.new(1, 0, 0, math.max(1, #rows * 88 + 3))
         if #rows == 0 then new("TextLabel", {Parent = host, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Text = "No skin data", TextColor3 = Library.Theme.Dim, TextSize = 11}) end
     end
 
     closeButton.MouseButton1Click:Connect(function() object:Close() end)
     UIS.InputBegan:Connect(function(input)
         if not panel.Visible or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        if not inBounds(input.Position, panel) then object:Close() end
+        if not inBounds(input.Position, panel) and not inAnySource(input.Position) then object:Close() end
     end)
     connect(RunService.RenderStepped, function()
         if not panel.Visible or not activeRow or not activeButton then return end
