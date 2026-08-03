@@ -352,7 +352,8 @@ function Library:Window(data)
     local parent = getParent()
     local gui = new("ScreenGui", {Name = title .. "_" .. tostring(math.random(10000, 99999)), IgnoreGuiInset = true, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parent)
     local popupLayer = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 9000}, gui)
-    local main = new("CanvasGroup", {Size = UDim2.fromOffset(700, 450), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1, Visible = false}, gui)
+    local main = new("CanvasGroup", {Size = UDim2.fromOffset(720, 500), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Library.Theme.Bg, BorderSizePixel = 0, GroupTransparency = 1, Visible = false}, gui)
+    local aspectRatio = new("UIAspectRatioConstraint", {AspectRatio = 720 / 500}, main)
     local mainScale = new("UIScale", {Scale = 0.985}, main)
     round(main, 4)
     local mainStrokes = softOuterGlow(main, Library.Theme.Stroke, 5, 1, 0.3)
@@ -363,8 +364,8 @@ function Library:Window(data)
         local t = (i - 1) / math.max(#mainStrokes - 1, 1)
         mainStrokeTargets[i] = 0.3 + (1 - 0.3) * t
     end
-    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Library.Theme.Bg, BackgroundTransparency = 0, BorderSizePixel = 0}, main)
-    local logo = new("Frame", {Size = UDim2.fromOffset(36, 36), Position = UDim2.fromOffset(10, 1), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0, BorderSizePixel = 0}, header)
+    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 48), BackgroundColor3 = Library.Theme.Bg, BackgroundTransparency = 0, BorderSizePixel = 0}, main)
+    local logo = new("Frame", {Size = UDim2.fromOffset(42, 42), Position = UDim2.fromOffset(10, 3), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0, BorderSizePixel = 0}, header)
     round(logo, 7)
     local logoAsset = resolveLogo(data.Logo)
     local logoImage
@@ -380,19 +381,29 @@ function Library:Window(data)
     else
         new("TextLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "C", TextColor3 = Color3.new(1, 1, 1), TextSize = 20, FontFace = Library.Font}, logo)
     end
-    local titleLabel = new("TextLabel", {Size = UDim2.fromOffset(220, 28), Position = UDim2.fromOffset(54, 5), BackgroundTransparency = 1, Text = title, TextColor3 = Library.Theme.Text, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left}, header)
+    local titleLabel = new("TextLabel", {Size = UDim2.fromOffset(220, 32), Position = UDim2.fromOffset(62, 8), BackgroundTransparency = 1, Text = title, TextColor3 = Library.Theme.Text, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left}, header)
     new("UIGradient", {Color = ColorSequence.new(Library.Theme.Accent, Color3.fromRGB(245, 245, 245)), Rotation = 0}, titleLabel)
-    local tabBar = new("Frame", {Size = UDim2.new(1, -292, 0, 34), Position = UDim2.fromOffset(276, 2), BackgroundTransparency = 1, BorderSizePixel = 0}, header)
-    new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8), VerticalAlignment = Enum.VerticalAlignment.Center}, tabBar)
-    local underline = new("Frame", {Size = UDim2.fromOffset(0, 2), Position = UDim2.fromOffset(0, 33), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0}, main)
+    new("TextLabel", {Size = UDim2.fromOffset(70, 20), Position = UDim2.fromOffset(180, 14), BackgroundTransparency = 1, Text = "v1.0.5", TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, header)
+    local searchFrame = new("Frame", {Size = UDim2.fromOffset(188, 28), Position = UDim2.new(1, -200, 0, 10), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0}, header)
+    round(searchFrame, 6)
+    stroke(searchFrame, Library.Theme.Stroke, 0.1, 1)
+    local searchIcon = new("TextLabel", {Size = UDim2.fromOffset(22, 28), Position = UDim2.fromOffset(7, 0), BackgroundTransparency = 1, Text = "⌕", TextColor3 = Library.Theme.Dim, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Center}, searchFrame)
+    local searchBox = new("TextBox", {Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(29, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = "", PlaceholderText = "Search...", PlaceholderColor3 = Library.Theme.Dim, TextColor3 = Library.Theme.Text, TextSize = 11, ClearTextOnFocus = false, TextXAlignment = Enum.TextXAlignment.Left}, searchFrame)
+    local tabBar = new("Frame", {Size = UDim2.new(0, 96, 1, -56), Position = UDim2.fromOffset(0, 52), BackgroundColor3 = Library.Theme.Panel, BackgroundTransparency = 0, BorderSizePixel = 0}, main)
+    round(tabBar, 4)
+    stroke(tabBar, Library.Theme.Stroke, 0.35, 1)
+    new("UIListLayout", {FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Top}, tabBar)
+    new("UIPadding", {PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8)}, tabBar)
+    local underline = new("Frame", {Size = UDim2.fromOffset(3, 0), Position = UDim2.fromOffset(0, 52), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 1, BorderSizePixel = 0}, main)
     round(underline, 3)
     new("UIGradient", {Rotation = 0, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.92), NumberSequenceKeypoint.new(0.12, 0), NumberSequenceKeypoint.new(0.88, 0), NumberSequenceKeypoint.new(1, 0.92)})}, underline)
     local underlineBloom = new("UIStroke", {Color = Library.Theme.Accent, Thickness = 4, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, underline)
-    local pageRoot = new("Frame", {Size = UDim2.new(1, -20, 1, -52), Position = UDim2.fromOffset(10, 44), BackgroundTransparency = 1, ClipsDescendants = true}, main)
+    local pageRoot = new("Frame", {Size = UDim2.new(1, -150, 1, -68), Position = UDim2.fromOffset(140, 56), BackgroundTransparency = 1, ClipsDescendants = true}, main)
     local notifyHolder = new("Frame", {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -14, 1, -14), Size = UDim2.fromOffset(260, 360), BackgroundTransparency = 1, ZIndex = 9500}, gui)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Bottom}, notifyHolder)
-    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, MainStroke = mainStroke, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage, IntroWidgets = {}}, WindowMethods)
+    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, MainStroke = mainStroke, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, AspectRatio = aspectRatio, SearchBox = searchBox, SearchQuery = "", Pages = {}, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage, IntroWidgets = {}}, WindowMethods)
     self.Windows[#self.Windows + 1] = window
+    connect(searchBox:GetPropertyChangedSignal("Text"), function() window:Filter(searchBox.Text) end)
     task.defer(function()
         main.Visible = true
         tween(main, {GroupTransparency = 0}, 0.22)
@@ -432,13 +443,13 @@ function Library:Window(data)
     end)
     connect(RunService.RenderStepped, function()
         if not main.Visible then return end
-        logo.Position = UDim2.fromOffset(10, 1 + math.sin(os.clock() * 1.8) * 2)
+        logo.Position = UDim2.fromOffset(10, 3 + math.sin(os.clock() * 1.8) * 2)
         local activeTab = window.Tabs[window.CurrentPage]
         if activeTab and activeTab.AbsoluteSize.X > 0 then
             local sc = math.max(mainScale.Scale, 0.001)
             underline.BackgroundTransparency = 0
-            underline.Position = UDim2.fromOffset((activeTab.AbsolutePosition.X - main.AbsolutePosition.X) / sc, 33)
-            underline.Size = UDim2.fromOffset(activeTab.AbsoluteSize.X / sc, 2)
+            underline.Position = UDim2.fromOffset(0, (activeTab.AbsolutePosition.Y - main.AbsolutePosition.Y) / sc)
+            underline.Size = UDim2.fromOffset(3, activeTab.AbsoluteSize.Y / sc)
         end
     end)
     return window
@@ -470,6 +481,25 @@ function WindowMethods:Unload()
     pcall(function() self.Gui:Destroy() end)
 end
 
+function WindowMethods:SectionMatches(section)
+    local query = string.lower(tostring(self.SearchQuery or ""))
+    if query == "" then return true end
+    if string.find(string.lower(tostring(section.Name or "")), query, 1, true) then return true end
+    for _, descendant in ipairs(section.Section:GetDescendants()) do
+        if descendant:IsA("TextLabel") or descendant:IsA("TextButton") or descendant:IsA("TextBox") then
+            if string.find(string.lower(tostring(descendant.Text or "")), query, 1, true) then return true end
+        end
+    end
+    return false
+end
+
+function WindowMethods:Filter(query)
+    self.SearchQuery = string.lower(tostring(query or ""))
+    for _, page in pairs(self.Pages) do
+        if page.CurrentSubPage and page.SelectSubPage then page:SelectSubPage(page.CurrentSubPage) end
+    end
+end
+
 function WindowMethods:Notify(message, duration, color)
     local item = new("CanvasGroup", {Size = UDim2.new(1, 0, 0, 34), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, GroupTransparency = 1, ZIndex = 9501}, self.NotifyHolder)
     round(item, 4)
@@ -487,8 +517,16 @@ end
 function WindowMethods:Page(data)
     data = data or {}
     local name = data.Name or data.name or "Page"
-    local tab = new("TextButton", {Size = UDim2.fromOffset(math.max(44, #name * 8), 30), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, AutoButtonColor = false, BorderSizePixel = 0}, self.TabBar)
-    round(tab, 3)
+    local page_labels = {COMBAT = "Combat", WIDGETS = "Rage Bot", VISUALS = "Visuals", MISC = "Misc", FUN = "Skins", SETTINGS = "Settings"}
+    local display_name = page_labels[name] or name
+    local tab = new("TextButton", {Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = display_name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = #self.Pages + 1}, self.TabBar)
+    round(tab, 5)
+    new("UIPadding", {PaddingLeft = UDim.new(0, 36), PaddingRight = UDim.new(0, 6)}, tab)
+    if data.Icon then
+        local tabIcon = new("ImageLabel", {Size = UDim2.fromOffset(20, 20), Position = UDim2.fromOffset(9, 11), BackgroundTransparency = 1, Image = data.Icon, ImageColor3 = Library.Theme.Dim, ScaleType = Enum.ScaleType.Fit, ZIndex = 4}, tab)
+        connect(tab.MouseEnter, function() tabIcon.ImageColor3 = Library.Theme.Text end)
+        connect(tab.MouseLeave, function() if self.CurrentPage ~= name then tabIcon.ImageColor3 = Library.Theme.Dim end end)
+    end
     local page = new("CanvasGroup", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, GroupTransparency = 1, Visible = false}, self.PageRoot)
     local pageScale = new("UIScale", {Scale = 0.985}, page)
     local left = new("ScrollingFrame", {Size = UDim2.new(0.5, -5, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0)}, page)
@@ -530,7 +568,8 @@ function WindowMethods:SelectPage(name)
         end
     end
     for tabName, tab in pairs(self.Tabs) do
-        tween(tab, {TextColor3 = tabName == name and Library.Theme.Accent or Library.Theme.Dim, BackgroundTransparency = 1}, 0.2)
+        local active = tabName == name
+        tween(tab, {TextColor3 = active and Library.Theme.Text or Library.Theme.Dim, BackgroundColor3 = active and Library.Theme.Input or Color3.new(1, 1, 1), BackgroundTransparency = active and 0.12 or 1}, 0.2)
     end
     task.defer(function()
         local tab = self.Tabs[name]
@@ -539,7 +578,7 @@ function WindowMethods:SelectPage(name)
             self.UnderlineBloom.Transparency = 0.48
             tween(self.UnderlineBloom, {Transparency = 1}, 0.34)
             local sc = self.MainScale and math.max(self.MainScale.Scale, 0.001) or 1
-            tween(self.Underline, {Position = UDim2.fromOffset((tab.AbsolutePosition.X - self.Main.AbsolutePosition.X) / sc, 33), Size = UDim2.fromOffset(tab.AbsoluteSize.X / sc, 2)}, 0.25)
+            tween(self.Underline, {Position = UDim2.fromOffset(0, (tab.AbsolutePosition.Y - self.Main.AbsolutePosition.Y) / sc), Size = UDim2.fromOffset(3, tab.AbsoluteSize.Y / sc)}, 0.25)
         end
     end)
 end
@@ -618,17 +657,20 @@ end
 function PageMethods:SubPage(data)
     data = data or {}
     local name = data.Name or data.name or "SubPage"
+    local sub_labels = { ["Silent Aim"] = "Aimbot", ["Melee"] = "Kill Aura", ["Gun Mods"] = "Modifications" }
+    local display_name = sub_labels[name] or name
+    local sub_order = { ["Silent Aim"] = 1, ["Melee"] = 2, ["Gun Mods"] = 3 }
     if not self.SubPageRoot then
         self.SubPages = {}
         self.SubPageButtons = {}
-        self.SubPageRoot = new("Frame", {Size = UDim2.new(0, 88, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, self.Page)
+        self.SubPageRoot = new("Frame", {Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, self.Page)
         self.SubPageHidden = new("Frame", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false}, self.Page)
-        new("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, self.SubPageRoot)
-        new("UIPadding", {PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, self.SubPageRoot)
-        self.Left.Position = UDim2.new(0, 98, 0, 0)
-        self.Left.Size = UDim2.new(0.5, -55, 1, 0)
-        self.Right.Position = UDim2.new(0.5, 55, 0, 0)
-        self.Right.Size = UDim2.new(0.5, -55, 1, 0)
+        new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Center}, self.SubPageRoot)
+        new("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, self.SubPageRoot)
+        self.Left.Position = UDim2.fromOffset(0, 42)
+        self.Left.Size = UDim2.new(0.5, -5, 1, -42)
+        self.Right.Position = UDim2.new(0.5, 5, 0, 42)
+        self.Right.Size = UDim2.new(0.5, -5, 1, -42)
         function self:SelectSubPage(label)
             for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
             Library.OpenFrames = {}
@@ -639,7 +681,7 @@ function PageMethods:SubPage(data)
                 buttonData.Accent.Visible = on
             end
             for _, section in ipairs(self.Sections) do
-                local visible = section.SubPage == label or section.SubPage == nil
+                local visible = (section.SubPage == label or section.SubPage == nil) and self.Window:SectionMatches(section)
                 if visible then
                     section.Section.Parent = section.Side == 2 and self.Right or self.Left
                     section.Section.Visible = true
@@ -654,10 +696,9 @@ function PageMethods:SubPage(data)
             end
         end
     end
-    local button = new("TextButton", {Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Text = name, TextColor3 = Library.Theme.Dim, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, LayoutOrder = #self.SubPages + 1}, self.SubPageRoot)
-    round(button, 3)
-    new("UIPadding", {PaddingLeft = UDim.new(0, 8)}, button)
-    local accent = new("Frame", {Size = UDim2.new(0, 3, 1, 0), Position = UDim2.new(0, -7, 0, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false}, button)
+    local button = new("TextButton", {Size = UDim2.fromOffset(math.max(82, #display_name * 8 + 24), 30), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, BorderSizePixel = 0, Text = display_name, TextColor3 = Library.Theme.Dim, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Center, AutoButtonColor = false, LayoutOrder = sub_order[name] or (10 + #self.SubPages)}, self.SubPageRoot)
+    round(button, 5)
+    local accent = new("Frame", {Size = UDim2.new(1, -12, 0, 2), Position = UDim2.new(0, 6, 1, -3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false}, button)
     round(accent, 2)
     self.SubPageButtons[name] = {Button = button, Accent = accent}
     self.SubPages[#self.SubPages + 1] = name
@@ -695,7 +736,8 @@ function SectionMethods:Checkbox(name, default, callback, style)
     else
         riskyColor = Library.Theme.UnstableText or Color3.fromRGB(255, 210, 70)
     end
-    local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Text = "", AutoButtonColor = false}, self.Body)
+    local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Text = "", AutoButtonColor = false}, self.Body)
+    local divider = new("Frame", {Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.45, BorderSizePixel = 0, ZIndex = 2}, row)
     local box = new("Frame", {Size = UDim2.fromOffset(13, 13), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 8}, row)
     round(box, 2)
     new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(12, 13, 15), Color3.fromRGB(23, 25, 30))}, box)
@@ -2528,6 +2570,14 @@ function Library:Watermark(data)
     return object
 end
 
+function Library:SetAspectRatio(value)
+    value = math.clamp(tonumber(value) or (720 / 500), 1.25, 2.2)
+    self.AspectRatio = value
+    for _, window in ipairs(self.Windows) do
+        if window.AspectRatio then window.AspectRatio.AspectRatio = value end
+    end
+end
+
 function Library:SetScale(value)
     value = math.clamp(tonumber(value) or 1, 0.5, 1.5)
     self.UIScale = value
@@ -2536,8 +2586,8 @@ function Library:SetScale(value)
         local tab = window.Tabs and window.Tabs[window.CurrentPage]
         if tab and tab.AbsoluteSize.X > 0 then
             local sc = window.MainScale and math.max(window.MainScale.Scale, 0.001) or 1
-            window.Underline.Position = UDim2.fromOffset((tab.AbsolutePosition.X - window.Main.AbsolutePosition.X) / sc, 33)
-            window.Underline.Size = UDim2.fromOffset(tab.AbsoluteSize.X / sc, 2)
+            window.Underline.Position = UDim2.fromOffset(0, (tab.AbsolutePosition.Y - window.Main.AbsolutePosition.Y) / sc)
+            window.Underline.Size = UDim2.fromOffset(3, tab.AbsoluteSize.Y / sc)
         end
     end
 end
