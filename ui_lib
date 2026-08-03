@@ -1392,9 +1392,10 @@ function SectionMethods:Button(label, callback)
     local bg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 1}, holder)
     round(bg, 3)
     stroke(bg, Library.Theme.Stroke, 0.08)
+    local buttonGradient = new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(27, 29, 35))}, bg)
     local button = new("TextButton", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = tostring(label or "Button"), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 12, AutoButtonColor = false, ZIndex = 2}, holder)
-    connect(button.MouseEnter, function() tween(bg, {BackgroundColor3 = Library.Theme.ControlHover}, 0.1) end)
-    connect(button.MouseLeave, function() tween(bg, {BackgroundColor3 = Library.Theme.Control}, 0.1) end)
+    connect(button.MouseEnter, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(18, 20, 24), Color3.fromRGB(36, 39, 46)) end)
+    connect(button.MouseLeave, function() buttonGradient.Color = ColorSequence.new(Color3.fromRGB(13, 14, 16), Color3.fromRGB(27, 29, 35)) end)
     connect(button.MouseButton1Click, function() Library:SafeCall(callback) end)
     return button
 end
