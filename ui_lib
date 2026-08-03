@@ -1496,7 +1496,7 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
     local holder = new("Frame", {Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, ZIndex = 100}, self.Body)
     new("TextLabel", {Size = UDim2.new(1, 0, 0, 12), BackgroundTransparency = 1, Text = data.Name or flag, TextColor3 = Library.Theme.Dim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, holder)
     local box = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 14), BackgroundTransparency = 1, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 100}, holder)
-    local boxBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 0.18, BorderSizePixel = 0, Active = false, ZIndex = 100}, box)
+    local boxBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Header, BackgroundTransparency = 0, BorderSizePixel = 0, Active = false, ZIndex = 100}, box)
     round(boxBg, 4)
     local boxStroke = stroke(boxBg, Library.Theme.Stroke, 0.18)
     local boxLine = new("Frame", {Size = UDim2.new(1, -10, 0, 1), Position = UDim2.new(0, 5, 1, -1), BackgroundColor3 = Library.Theme.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 100}, boxBg)
@@ -1509,14 +1509,14 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         tween(arrowRight, {Rotation = isOpen and 35 or -35, BackgroundColor3 = isOpen and Library.Theme.Accent or Library.Theme.Dim}, 0.12)
     end
     local function setBoxState(active)
-        tween(boxBg, {BackgroundColor3 = active and Library.Theme.ControlHover or Library.Theme.Input, BackgroundTransparency = active and 0.04 or 0.18}, 0.12)
+        tween(boxBg, {BackgroundColor3 = active and Library.Theme.ControlHover or Library.Theme.Header, BackgroundTransparency = active and 0.04 or 0}, 0.12)
         tween(boxStroke, {Color = active and Library.Theme.Accent or Library.Theme.Stroke, Transparency = active and 0.05 or 0.18}, 0.12)
         tween(boxLine, {BackgroundColor3 = active and Library.Theme.Accent or Library.Theme.Stroke, BackgroundTransparency = active and 0.15 or 0.5}, 0.12)
     end
     local list = new("CanvasGroup", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ClipsDescendants = true, GroupTransparency = 1, ZIndex = 9600}, self.Window.PopupLayer)
     Library.PopupOwners[list] = findSettingsOwner(self.Body)
     round(list, 4)
-    local listBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9600}, list)
+    local listBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9600}, list)
     round(listBg, 4)
     stroke(listBg, Library.Theme.Stroke, 0.1)
     local scroll = new("ScrollingFrame", {Size = UDim2.new(1, -2, 1, -2), Position = UDim2.fromOffset(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 9601}, list)
@@ -1543,7 +1543,7 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
             local on = isSelected(option)
             item.Label.TextColor3 = on and Library.Theme.Accent or Library.Theme.Text
             item.Line.Visible = on
-            item.Row.BackgroundColor3 = on and Library.Theme.ControlHover or Library.Theme.Control
+            item.Row.BackgroundColor3 = on and Library.Theme.ControlHover or Library.Theme.Header
             item.Row.BackgroundTransparency = on and 0.12 or 1
             item.Line.BackgroundColor3 = Library.Theme.Accent
         end
@@ -1605,7 +1605,7 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
             if child:IsA("TextButton") then child:Destroy() end
         end
         for _, option in ipairs(options) do
-            local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Control, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9602}, scroll)
+            local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Header, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9602}, scroll)
             local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9603}, row)
             round(line, 2)
             local label = new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9603}, row)
@@ -2008,7 +2008,6 @@ function Library:WeaponSkinGrid(params)
     stroke(panel, Library.Theme.Stroke, 0.08)
     local header = new("Frame", {Parent = panel, Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9501})
     round(header, 6)
-    new("Frame", {Parent = header, Size = UDim2.new(1, -16, 0, 1), Position = UDim2.fromOffset(8, 29), BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 9502})
     local title = new("TextLabel", {Parent = header, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9502})
     local closeButton = new("TextButton", {Parent = header, Size = UDim2.fromOffset(23, 23), Position = UDim2.new(1, -29, 0, 3), BackgroundTransparency = 1, Text = "×", TextColor3 = Library.Theme.Dim, TextSize = 16, AutoButtonColor = false, Selectable = false, ZIndex = 9503})
     local skinScroll = new("ScrollingFrame", {Parent = panel, Size = UDim2.new(1, -12, 1, -40), Position = UDim2.fromOffset(6, 34), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true, ZIndex = 9501})
@@ -2113,7 +2112,7 @@ function Library:WeaponSkinGrid(params)
             local tileStroke = stroke(tile, Library.Theme.Stroke, 0.24)
             local iconValue = type(skin.Icon) == "string" and skin.Icon or ""
             local image = new("ImageLabel", {Parent = tile, Size = UDim2.fromOffset(50, 45), Position = UDim2.fromOffset(4, 3), BackgroundTransparency = 1, Image = iconValue, ScaleType = Enum.ScaleType.Fit, ZIndex = 9504})
-            local placeholder = new("TextLabel", {Parent = tile, Size = UDim2.fromOffset(50, 45), Position = UDim2.fromOffset(4, 3), BackgroundTransparency = 1, Text = string.upper(string.sub(skinLabel, 1, 5)), TextColor3 = Library.Theme.Dim, TextSize = 9, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
+            local placeholder = new("TextLabel", {Parent = tile, Size = UDim2.fromOffset(50, 45), Position = UDim2.fromOffset(4, 3), BackgroundTransparency = 1, Text = string.sub(skinLabel, 1, 5), TextColor3 = Library.Theme.Dim, TextSize = 9, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
             local label = new("TextLabel", {Parent = tile, Size = UDim2.new(1, -4, 0, 15), Position = UDim2.new(0, 2, 1, -17), BackgroundTransparency = 1, Text = skinLabel, TextColor3 = Library.Theme.Text, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9505})
             item.SkinTiles[skinName] = {Tile = tile, Stroke = tileStroke, Label = label, Placeholder = placeholder, Image = image}
             tile.MouseEnter:Connect(function()
@@ -2137,8 +2136,8 @@ function Library:WeaponSkinGrid(params)
     local function addRow(row)
         local index = #rows + 1
         local y = (index - 1) * 88
-        new("TextLabel", {Parent = host, Size = UDim2.new(1, -12, 0, 15), Position = UDim2.fromOffset(6, y), BackgroundTransparency = 1, Text = string.upper(tostring(row.Title or row.Key or "Items")), TextColor3 = Library.Theme.Dim, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left})
-        local strip = new("ScrollingFrame", {Parent = host, Size = UDim2.new(1, -8, 0, 68), Position = UDim2.fromOffset(4, y + 17), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 0.02, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, ScrollingDirection = Enum.ScrollingDirection.X, CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true})
+        new("TextLabel", {Parent = host, Size = UDim2.new(1, -12, 0, 15), Position = UDim2.fromOffset(6, y), BackgroundTransparency = 1, Text = tostring(row.Title or row.Key or "Items"), TextColor3 = Library.Theme.Dim, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left})
+        local strip = new("ScrollingFrame", {Parent = host, Size = UDim2.new(1, -8, 0, 68), Position = UDim2.fromOffset(4, y + 17), BackgroundColor3 = Library.Theme.Header, BackgroundTransparency = 0, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, ScrollingDirection = Enum.ScrollingDirection.X, CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None, Active = true})
         round(strip, 4)
         stroke(strip, Library.Theme.Stroke, 0.28)
         local layout = new("UIListLayout", {Parent = strip, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5), VerticalAlignment = Enum.VerticalAlignment.Center})
@@ -2152,7 +2151,7 @@ function Library:WeaponSkinGrid(params)
             local buttonStroke = stroke(button, Library.Theme.Stroke, 0.2)
             local iconValue = type(item.Icon) == "string" and item.Icon or ""
             local image = new("ImageLabel", {Parent = button, Size = UDim2.fromOffset(54, 42), Position = UDim2.fromOffset(5, 3), BackgroundTransparency = 1, Image = iconValue, ScaleType = Enum.ScaleType.Fit, ZIndex = 9504})
-            local placeholder = new("TextLabel", {Parent = button, Size = UDim2.fromOffset(54, 42), Position = UDim2.fromOffset(5, 3), BackgroundTransparency = 1, Text = string.upper(string.sub(tostring(item.Label or item.Name or "Item"), 1, 5)), TextColor3 = Library.Theme.Dim, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
+            local placeholder = new("TextLabel", {Parent = button, Size = UDim2.fromOffset(54, 42), Position = UDim2.fromOffset(5, 3), BackgroundTransparency = 1, Text = string.sub(tostring(item.Label or item.Name or "Item"), 1, 5), TextColor3 = Library.Theme.Dim, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
             local itemLabel = new("TextLabel", {Parent = button, Size = UDim2.new(1, -4, 0, 13), Position = UDim2.new(0, 2, 1, -15), BackgroundTransparency = 1, Text = tostring(item.Label or item.Name or "Item"), TextColor3 = Library.Theme.Text, TextSize = 7, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9505})
             item._ImageObject = image
             item._Placeholder = placeholder
