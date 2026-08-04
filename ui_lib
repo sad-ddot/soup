@@ -1300,7 +1300,7 @@ function Library:CreateKeybind(data)
     stroke(popup, Library.Theme.Stroke, 0.08)
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9681}, popup)
     round(header, 7)
-    new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = "Bind settings", TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9682}, header)
+    new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = "settings", TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9682}, header)
     local popupBody = new("Frame", {Size = UDim2.new(1, -16, 1, -40), Position = UDim2.fromOffset(8, 34), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 9681}, popup)
     local bodyLayout = new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5)}, popupBody)
     new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 6)}, popupBody)
@@ -1308,7 +1308,7 @@ function Library:CreateKeybind(data)
     local capture = false
     local captureKey = nil
     local show_in_list = bind.ShowInKeybindList ~= false
-    local settingsSection = setmetatable({Window = data.Window, Body = popupBody, Page = data.Section and data.Section.Page, Name = "Bind settings", Side = 1}, SectionMethods)
+    local settingsSection = setmetatable({Window = data.Window, Body = popupBody, Page = data.Section and data.Section.Page, Name = "settings", Side = 1}, SectionMethods)
     local show_control
     local mode_control
     local closePopup
@@ -1622,13 +1622,13 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         tween(boxStroke, {Color = active and Library.Theme.Accent or Library.Theme.Stroke, Transparency = active and 0.05 or 0.18}, 0.12)
         tween(boxLine, {BackgroundColor3 = active and Library.Theme.Accent or Library.Theme.Stroke, BackgroundTransparency = active and 0.15 or 0.5}, 0.12)
     end
-    local list = new("CanvasGroup", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ClipsDescendants = true, GroupTransparency = 1, ZIndex = 9600}, self.Window.PopupLayer)
+    local list = new("CanvasGroup", {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ClipsDescendants = true, GroupTransparency = 1, ZIndex = 9750}, self.Window.PopupLayer)
     Library.PopupOwners[list] = findSettingsOwner(self.Body)
     round(list, 4)
-    local listBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9600}, list)
+    local listBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9750}, list)
     round(listBg, 4)
     stroke(listBg, Library.Theme.Stroke, 0.1)
-    local scroll = new("ScrollingFrame", {Size = UDim2.new(1, -2, 1, -2), Position = UDim2.fromOffset(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 9601}, list)
+    local scroll = new("ScrollingFrame", {Size = UDim2.new(1, -2, 1, -2), Position = UDim2.fromOffset(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Library.Theme.AccentDk, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 9751}, list)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, scroll)
     new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4)}, scroll)
     local open = false
@@ -1714,10 +1714,10 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
             if child:IsA("TextButton") then child:Destroy() end
         end
         for _, option in ipairs(options) do
-            local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Header, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9602}, scroll)
-            local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9603}, row)
+            local row = new("TextButton", {Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = Library.Theme.Header, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9752}, scroll)
+            local line = new("Frame", {Size = UDim2.new(0, 2, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9753}, row)
             round(line, 2)
-            local label = new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9603}, row)
+            local label = new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = text(option), TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9753}, row)
             labels[option] = {Label = label, Line = line, Row = row}
             connect(row.MouseEnter, function() if not isSelected(option) then tween(row, {BackgroundTransparency = 0.88}, 0.1) end end)
             connect(row.MouseLeave, function() if not isSelected(option) then tween(row, {BackgroundTransparency = 1}, 0.1) end end)
@@ -3206,7 +3206,7 @@ local function aspect_matrix_cframe(base, horizontal, vertical)
         R00 * horizontal,
         R01 * vertical,
         R02,
-        R10,
+        R10 * horizontal,
         R11 * vertical,
         R12,
         R20 * horizontal,
@@ -3244,7 +3244,9 @@ function Library:_ApplyAspectRatio()
     end
     local current = camera.CFrame
     local base = current
-    if self.AspectBaseCFrame and self.AspectLastCFrame and aspect_cframe_close(current, self.AspectLastCFrame) then base = self.AspectBaseCFrame end
+    if self.AspectBaseCFrame and self.AspectLastCFrame and aspect_cframe_close(current, self.AspectLastCFrame) then
+        base = self.AspectBaseCFrame
+    end
     local viewport = camera.ViewportSize
     local actual = viewport.Y > 0 and viewport.X / viewport.Y or (16 / 9)
     local target = math.clamp(tonumber(self.AspectRatio) or 1.58, 1.25, 2.2)
@@ -3266,9 +3268,19 @@ function Library:SetAspectRatioEnabled(value)
     self:_ApplyAspectRatio()
 end
 
-connect(RunService.RenderStepped, function()
-    if Library.AspectRatioEnabled then Library:_ApplyAspectRatio() end
+local aspect_bound = false
+pcall(function()
+    RunService:UnbindFromRenderStep("CatHackAspectRatio")
+    RunService:BindToRenderStep("CatHackAspectRatio", Enum.RenderPriority.Camera.Value + 1, function()
+        if Library.AspectRatioEnabled then Library:_ApplyAspectRatio() end
+    end)
+    aspect_bound = true
 end)
+if not aspect_bound then
+    connect(RunService.RenderStepped, function()
+        if Library.AspectRatioEnabled then Library:_ApplyAspectRatio() end
+    end)
+end
 
 function Library:SetScale(value)
     value = math.clamp(tonumber(value) or 1, 0.5, 1.5)
