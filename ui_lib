@@ -2003,7 +2003,7 @@ function Library:WeaponSkinGrid(params)
     local section = params.Section
     if not (section and section.Body and section.Window and section.Window.PopupLayer) then return nil end
     local host = new("Frame", {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, LayoutOrder = params.LayoutOrder or 80}, section.Body)
-    local panel = new("CanvasGroup", {Parent = section.Window.PopupLayer, Size = UDim2.fromOffset(320, 210), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9500, Active = true, ClipsDescendants = true})
+    local panel = new("CanvasGroup", {Parent = section.Window.PopupLayer, Size = UDim2.fromOffset(320, 210), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9500, Active = true, ClipsDescendants = true})
     round(panel, 6)
     stroke(panel, Library.Theme.Stroke, 0.08)
     local header = new("Frame", {Parent = panel, Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9501})
@@ -2017,13 +2017,18 @@ function Library:WeaponSkinGrid(params)
     local activeRow, activeName, activeButton, activeStroke = nil, nil, nil, nil
     local rows = {}
     local object = {Host = host, Panel = panel, Rows = rows}
+    local popupToken = 0
 
-    local function resetSource()
+    local function resetSource(animated)
         if activeButton and activeButton.Parent then
             activeButton.BackgroundColor3 = Library.Theme.Header
             if activeStroke and activeStroke.Parent then
-                activeStroke.Color = Library.Theme.Stroke
-                activeStroke.Transparency = 0.18
+                if animated then
+                    tween(activeStroke, {Color = Library.Theme.Stroke, Transparency = 0.18}, 0.14)
+                else
+                    activeStroke.Color = Library.Theme.Stroke
+                    activeStroke.Transparency = 0.18
+                end
             end
         end
         activeRow, activeName, activeButton, activeStroke = nil, nil, nil, nil
@@ -2036,11 +2041,24 @@ function Library:WeaponSkinGrid(params)
         noSkins.Visible = false
     end
 
-    function object:Close()
-        panel.Visible = false
-        panel.GroupTransparency = 1
-        clearSkinPopup()
-        resetSource()
+    function object:Close(immediate)
+        popupToken += 1
+        local token = popupToken
+        if immediate or not panel.Visible then
+            panel.Visible = false
+            panel.GroupTransparency = 1
+            clearSkinPopup()
+            resetSource(false)
+            return
+        end
+        resetSource(true)
+        local fade = tween(panel, {GroupTransparency = 1}, 0.14)
+        fade.Completed:Connect(function()
+            if token ~= popupToken then return end
+            panel.Visible = false
+            clearSkinPopup()
+            resetSource(false)
+        end)
     end
 
     local function placePanel(button)
@@ -2079,28 +2097,43 @@ function Library:WeaponSkinGrid(params)
         return nil
     end
 
+    local function refreshSource(row, item)
+        if not item or not item._ImageObject or not item._ImageObject.Parent then return end
+        local selected = selectedFor(row, item)
+        local icon = type(item.BaseIcon) == "string" and item.BaseIcon or ""
+        if selected and tostring(selected) ~= "Default" then
+            for _, skin in ipairs(item.Skins or {}) do
+                if tostring(skin.Name) == tostring(selected) and type(skin.Icon) == "string" and skin.Icon ~= "" then
+                    icon = skin.Icon
+                    break
+                end
+            end
+        end
+        item._ImageObject.Image = icon
+        if item._Placeholder then item._Placeholder.Visible = icon == "" end
+    end
+
     local function paintSkinTiles(row, item)
         local selected = selectedFor(row, item)
         for skinName, data in pairs(item.SkinTiles or {}) do
             if data.Tile and data.Tile.Parent then
                 local on = selected ~= nil and tostring(selected) == tostring(skinName)
-                data.Stroke.Color = on and Library.Theme.Accent or Library.Theme.Stroke
-                data.Stroke.Transparency = on and 0 or 0.25
+                tween(data.Stroke, {Color = on and Library.Theme.Accent or Library.Theme.Stroke, Transparency = on and 0 or 0.25}, 0.14)
                 data.Tile.BackgroundColor3 = Library.Theme.Header
-                data.Label.TextColor3 = on and Library.Theme.Accent or Library.Theme.Text
+                tween(data.Label, {TextColor3 = on and Library.Theme.Accent or Library.Theme.Text}, 0.14)
             end
         end
     end
 
     local function openSkinPopup(row, item, button)
         if activeRow and activeRow.Key == row.Key and activeName == item.Name and panel.Visible then
-            object:Close()
+            object:Close(false)
             return
         end
-        object:Close()
+        object:Close(true)
         activeRow, activeName, activeButton, activeStroke = row, item.Name, button, item._Stroke
         button.BackgroundColor3 = Library.Theme.Header
-        if activeStroke then activeStroke.Color = Library.Theme.Accent; activeStroke.Transparency = 0 end
+        if activeStroke then tween(activeStroke, {Color = Library.Theme.Accent, Transparency = 0}, 0.14) end
         title.Text = tostring(row.Title or row.Key or "Items") .. " / " .. tostring(item.Label or item.Name)
         item.SkinTiles = {}
         local skins = type(item.Skins) == "table" and item.Skins or {}
@@ -2118,6 +2151,7 @@ function Library:WeaponSkinGrid(params)
             tile.MouseLeave:Connect(function() paintSkinTiles(row, item) end)
             tile.MouseButton1Click:Connect(function()
                 if type(params.OnSelect) == "function" then pcall(params.OnSelect, row.Key, item.Name, skinName, item) end
+                refreshSource(row, item)
                 paintSkinTiles(row, item)
             end)
         end
@@ -2150,18 +2184,20 @@ function Library:WeaponSkinGrid(params)
             local image = new("ImageLabel", {Parent = button, Size = UDim2.fromOffset(54, 42), Position = UDim2.fromOffset(5, 3), BackgroundTransparency = 1, Image = iconValue, ScaleType = Enum.ScaleType.Fit, ZIndex = 9504})
             local placeholder = new("TextLabel", {Parent = button, Size = UDim2.fromOffset(54, 42), Position = UDim2.fromOffset(5, 3), BackgroundTransparency = 1, Text = string.sub(tostring(item.Label or item.Name or "Item"), 1, 5), TextColor3 = Library.Theme.Dim, TextSize = 8, TextTruncate = Enum.TextTruncate.AtEnd, Visible = iconValue == "", ZIndex = 9505})
             local itemLabel = new("TextLabel", {Parent = button, Size = UDim2.new(1, -4, 0, 13), Position = UDim2.new(0, 2, 1, -15), BackgroundTransparency = 1, Text = tostring(item.Label or item.Name or "Item"), TextColor3 = Library.Theme.Text, TextSize = 7, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 9505})
+            item.BaseIcon = iconValue
             item._ImageObject = image
             item._Placeholder = placeholder
             item._LabelObject = itemLabel
             button.MouseButton1Click:Connect(function() openSkinPopup(rowData, item, button) end)
             item._Button = button
             item._Stroke = buttonStroke
+            refreshSource(rowData, item)
         end
         return rowData
     end
 
     function object:SetRows(newRows)
-        object:Close()
+        object:Close(true)
         for _, child in ipairs(host:GetChildren()) do
             if child:IsA("GuiObject") then child:Destroy() end
         end
