@@ -16,6 +16,8 @@ local Library = {
     SettingsPopups = {},
     CustomPopups = setmetatable({}, {__mode = "k"}),
     PopupOwners = setmetatable({}, {__mode = "k"}),
+    PopupTransitionState = setmetatable({}, {__mode = "k"}),
+    PopupStrokeBases = setmetatable({}, {__mode = "k"}),
     Keybinds = {},
     Folders = {
         Directory = "CatHack",
@@ -127,6 +129,67 @@ local function tween(object, props, time, style, direction)
     local tw = TweenService:Create(object, TweenInfo.new(time or 0.18, style or Enum.EasingStyle.Quad, direction or Enum.EasingDirection.Out), props)
     tw:Play()
     return tw
+end
+
+local function popup_transition(root, show, duration, callback)
+    if not root or not root.Parent then
+        if callback then callback() end
+        return
+    end
+    local state = Library.PopupTransitionState[root]
+    if not state then
+        state = {token = 0, tweens = {}}
+        Library.PopupTransitionState[root] = state
+    end
+    state.token = state.token + 1
+    local token = state.token
+    for _, active in ipairs(state.tweens) do pcall(function() active:Cancel() end) end
+    state.tweens = {}
+    local strokes = {}
+    for _, child in ipairs(root:GetDescendants()) do
+        if child:IsA("UIStroke") then
+            local base = Library.PopupStrokeBases[child]
+            if base == nil then
+                base = child.Transparency
+                Library.PopupStrokeBases[child] = base
+            end
+            strokes[#strokes + 1] = {object = child, base = base}
+        end
+    end
+    if show then
+        root.Visible = true
+        pcall(function() root.GroupTransparency = 1 end)
+        for _, data in ipairs(strokes) do pcall(function() data.object.Transparency = 1 end) end
+    end
+    local finished = 0
+    local total = 1 + #strokes
+    local function finish()
+        finished = finished + 1
+        if finished >= total and state.token == token then
+            state.tweens = {}
+            if callback then callback() end
+        end
+    end
+    local ok_root, root_tween = pcall(function()
+        return tween(root, {GroupTransparency = show and 0 or 1}, duration or 0.14)
+    end)
+    if ok_root and root_tween then
+        state.tweens[#state.tweens + 1] = root_tween
+        root_tween.Completed:Connect(finish)
+    else
+        finish()
+    end
+    for _, data in ipairs(strokes) do
+        local ok_stroke, stroke_tween = pcall(function()
+            return tween(data.object, {Transparency = show and data.base or 1}, duration or 0.14)
+        end)
+        if ok_stroke and stroke_tween then
+            state.tweens[#state.tweens + 1] = stroke_tween
+            stroke_tween.Completed:Connect(finish)
+        else
+            finish()
+        end
+    end
 end
 
 local function softOuterGlow(target, color, layers, thickCore, alphaCore)
@@ -481,7 +544,7 @@ function Library:Window(data)
     local pageRoot = new("Frame", {Size = UDim2.new(1, -20, 1, -52), Position = UDim2.fromOffset(10, 44), BackgroundTransparency = 1, ClipsDescendants = true}, main)
     local notifyHolder = new("Frame", {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -14, 1, -14), Size = UDim2.fromOffset(260, 360), BackgroundTransparency = 1, ZIndex = 9500}, gui)
     new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Bottom}, notifyHolder)
-    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, MainStroke = mainStroke, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, Pages = {}, PageOrder = {}, PageCount = 0, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage, IntroWidgets = {}}, WindowMethods)
+    local window = setmetatable({Library = self, Gui = gui, Main = main, MainScale = mainScale, MainStroke = mainStroke, MainStrokes = mainStrokes, MainStrokeTargets = mainStrokeTargets, Header = header, PopupLayer = popupLayer, PageRoot = pageRoot, TabBar = tabBar, Underline = underline, UnderlineBloom = underlineBloom, Pages = {}, PageOrder = {}, PageCount = 0, Tabs = {}, Sections = {}, CurrentPage = nil, NotifyHolder = notifyHolder, Open = true, Alive = true, LogoAsset = logoAsset, LogoImage = logoImage, IntroWidgets = {}}, WindowMethods)
     self.Windows[#self.Windows + 1] = window
     task.defer(function()
         main.Visible = true
@@ -547,11 +610,15 @@ function WindowMethods:SetOpen(value)
         if self.MainScale then self.MainScale.Scale = targetScale * 0.985 end
         tween(self.Main, {GroupTransparency = 0}, 0.18)
         if self.MainScale then tween(self.MainScale, {Scale = targetScale}, 0.18, Enum.EasingStyle.Back) end
+        for i, strokeObject in ipairs(self.MainStrokes or {}) do
+            tween(strokeObject, {Transparency = (self.MainStrokeTargets or {})[i] or 0.3}, 0.18)
+        end
     else
         if self.ESPPreviewObject then self.ESPPreviewObject.Frame.Visible = false end
         for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
         Library.OpenFrames = {}
         if self.MainScale then tween(self.MainScale, {Scale = (Library.UIScale or 1) * 0.985}, 0.16) end
+        for _, strokeObject in ipairs(self.MainStrokes or {}) do tween(strokeObject, {Transparency = 1}, 0.16) end
         tween(self.Main, {GroupTransparency = 1}, 0.16).Completed:Connect(function()
             if not self.Open then self.Main.Visible = false end
         end)
@@ -919,8 +986,8 @@ function Library:CreateSettingsPopup(control, window, sectionObject)
     end
     popupObject.Build = build
 
-    -- The returned object is a real Section facade. Settings are independent
-    -- controls; inline colorpickers/keybinds are intentionally not copied here.
+    
+    
     for _, methodName in ipairs({"Toggle", "Slider", "Dropdown", "Colorpicker", "Keybind", "Textbox", "Button", "Label"}) do
         popupObject[methodName] = function(_, ...)
             return settingsSection[methodName](settingsSection, ...)
@@ -946,7 +1013,7 @@ function Library:CreateSettingsPopup(control, window, sectionObject)
     local function close()
         popupObject.Open = false
         Library.SettingsPopups[popup] = nil
-        tween(popup, {GroupTransparency = 1}, 0.12).Completed:Connect(function()
+        popup_transition(popup, false, 0.12, function()
             if not popupObject.Open then popup.Visible = false end
         end)
     end
@@ -956,12 +1023,8 @@ function Library:CreateSettingsPopup(control, window, sectionObject)
         Library:CloseSettingsPopups()
         build()
         popupObject.Open = true
-        popup.Visible = true
         place()
-        popup.GroupTransparency = 1
-        tween(popup, {GroupTransparency = 0}, 0.14)
-        -- Keep the parent settings window outside the transient popup list so a
-        -- dropdown/keybind opened from inside it cannot close its parent.
+        popup_transition(popup, true, 0.14)
         Library.SettingsPopups[popup] = close
     end
     connect(control._settings_button.MouseButton1Click, function()
@@ -1092,7 +1155,7 @@ function Library:CreateColorpicker(data)
     local function close()
         open = false
         Library.OpenFrames[popup] = nil
-        tween(popup, {GroupTransparency = 1}, 0.12).Completed:Connect(function()
+        popup_transition(popup, false, 0.12, function()
             if not open then
                 popup.Visible = false
                 Library.PopupOwners[popup] = nil
@@ -1106,9 +1169,7 @@ function Library:CreateColorpicker(data)
         Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
         place()
         apply(true)
-        popup.Visible = true
-        popup.GroupTransparency = 1
-        tween(popup, {GroupTransparency = 0}, 0.14)
+        popup_transition(popup, true, 0.14)
         Library.OpenFrames[popup] = close
     end
     connect(swatch.MouseButton1Click, function() if open then close() else show() end end)
@@ -1122,7 +1183,7 @@ function Library:CreateColorpicker(data)
         if not ctxOpen then return end
         ctxOpen = false
         Library.OpenFrames[ctx] = nil
-        tween(ctx, {GroupTransparency = 1}, 0.1).Completed:Connect(function()
+        popup_transition(ctx, false, 0.1, function()
             if not ctxOpen then
                 ctx.Visible = false
                 Library.PopupOwners[ctx] = nil
@@ -1135,9 +1196,7 @@ function Library:CreateColorpicker(data)
         ctxOpen = true
         Library.PopupOwners[ctx] = findSettingsOwner(data.Parent)
         ctx.Position = UDim2.fromOffset(swatch.AbsolutePosition.X - data.Window.PopupLayer.AbsolutePosition.X, swatch.AbsolutePosition.Y - data.Window.PopupLayer.AbsolutePosition.Y + swatch.AbsoluteSize.Y + 4)
-        ctx.Visible = true
-        ctx.GroupTransparency = 1
-        tween(ctx, {GroupTransparency = 0}, 0.12)
+        popup_transition(ctx, true, 0.12)
         Library.OpenFrames[ctx] = ctxClose
     end
     connect(swatch.MouseButton2Click, function()
@@ -1261,7 +1320,8 @@ function Library:CreateKeybind(data)
     local function closePopup()
         open = false
         Library.OpenFrames[popup] = nil
-        tween(popup, {Size = UDim2.fromOffset(88, 0), GroupTransparency = 1}, 0.12).Completed:Connect(function()
+        tween(popup, {Size = UDim2.fromOffset(88, 0)}, 0.12)
+        popup_transition(popup, false, 0.12, function()
             if not open then
                 popup.Visible = false
                 Library.PopupOwners[popup] = nil
@@ -1277,8 +1337,9 @@ function Library:CreateKeybind(data)
         open = true
         Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
         placePopup()
-        popup.Visible = true
-        tween(popup, {Size = UDim2.fromOffset(88, 74), GroupTransparency = 0}, 0.14)
+        popup.Size = UDim2.fromOffset(88, 0)
+        popup_transition(popup, true, 0.14)
+        tween(popup, {Size = UDim2.fromOffset(88, 74)}, 0.14)
         Library.OpenFrames[popup] = closePopup
     end
     connect(RunService.RenderStepped, function()
@@ -1578,7 +1639,8 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         setArrow(false)
         setBoxState(false)
         Library.OpenFrames[list] = nil
-        tween(list, {Size = UDim2.fromOffset(list.AbsoluteSize.X, 0), GroupTransparency = 1}, 0.12).Completed:Connect(function()
+        tween(list, {Size = UDim2.fromOffset(list.AbsoluteSize.X, 0)}, 0.12)
+        popup_transition(list, false, 0.12, function()
             if not open then
                 list.Visible = false
                 Library.PopupOwners[list] = nil
@@ -1591,12 +1653,11 @@ function SectionMethods:Dropdown(data, optionsArg, defaultArg, callbackArg)
         open = true
         setBoxState(true)
         Library.PopupOwners[list] = findSettingsOwner(self.Body)
-        list.Visible = true
-        list.GroupTransparency = 1
         place()
         local height = math.min(math.max(#options, 1), 6) * 20 + 8
         list.Size = UDim2.fromOffset(box.AbsoluteSize.X, 0)
-        tween(list, {Size = UDim2.fromOffset(box.AbsoluteSize.X, height), GroupTransparency = 0}, 0.16)
+        popup_transition(list, true, 0.16)
+        tween(list, {Size = UDim2.fromOffset(box.AbsoluteSize.X, height)}, 0.16)
         Library.OpenFrames[list] = close
     end
     local function rebuild()
@@ -2062,8 +2123,7 @@ function Library:WeaponSkinGrid(params)
             return
         end
         resetSource(true)
-        local fade = skin_tween(panel, {GroupTransparency = 1}, 0.14)
-        fade.Completed:Connect(function()
+        popup_transition(panel, false, 0.14, function()
             if token ~= popupToken then return end
             panel.Visible = false
             clearSkinPopup()
@@ -2167,10 +2227,8 @@ function Library:WeaponSkinGrid(params)
         end
         noSkins.Visible = #skins == 0
         skinScroll.CanvasSize = UDim2.fromOffset(0, skinLayout.AbsoluteContentSize.Y + 10)
-        panel.Visible = true
-        panel.GroupTransparency = 1
         placePanel(button)
-        skin_tween(panel, {GroupTransparency = 0}, 0.12)
+        popup_transition(panel, true, 0.12)
         paintSkinTiles(row, item)
     end
 
