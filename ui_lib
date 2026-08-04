@@ -2018,13 +2018,23 @@ function Library:WeaponSkinGrid(params)
     local rows = {}
     local object = {Host = host, Panel = panel, Rows = rows}
     local popupToken = 0
+    local running_tweens = setmetatable({}, {__mode = "k"})
+    local function skin_tween(target, properties, duration)
+        if not target or not target.Parent then return nil end
+        local previous = running_tweens[target]
+        if previous then pcall(function() previous:Cancel() end) end
+        local next_tween = TweenService:Create(target, TweenInfo.new(duration or 0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), properties)
+        running_tweens[target] = next_tween
+        next_tween:Play()
+        return next_tween
+    end
 
     local function resetSource(animated)
         if activeButton and activeButton.Parent then
             activeButton.BackgroundColor3 = Library.Theme.Header
             if activeStroke and activeStroke.Parent then
                 if animated then
-                    tween(activeStroke, {Color = Library.Theme.Stroke, Transparency = 0.18}, 0.14)
+                    skin_tween(activeStroke, {Color = Library.Theme.Stroke, Transparency = 0.18}, 0.14)
                 else
                     activeStroke.Color = Library.Theme.Stroke
                     activeStroke.Transparency = 0.18
@@ -2052,7 +2062,7 @@ function Library:WeaponSkinGrid(params)
             return
         end
         resetSource(true)
-        local fade = tween(panel, {GroupTransparency = 1}, 0.14)
+        local fade = skin_tween(panel, {GroupTransparency = 1}, 0.14)
         fade.Completed:Connect(function()
             if token ~= popupToken then return end
             panel.Visible = false
@@ -2118,9 +2128,9 @@ function Library:WeaponSkinGrid(params)
         for skinName, data in pairs(item.SkinTiles or {}) do
             if data.Tile and data.Tile.Parent then
                 local on = selected ~= nil and tostring(selected) == tostring(skinName)
-                tween(data.Stroke, {Color = on and Library.Theme.Accent or Library.Theme.Stroke, Transparency = on and 0 or 0.25}, 0.14)
+                skin_tween(data.Stroke, {Color = on and Library.Theme.Accent or Library.Theme.Stroke, Transparency = on and 0 or 0.25}, 0.14)
                 data.Tile.BackgroundColor3 = Library.Theme.Header
-                tween(data.Label, {TextColor3 = on and Library.Theme.Accent or Library.Theme.Text}, 0.14)
+                skin_tween(data.Label, {TextColor3 = on and Library.Theme.Accent or Library.Theme.Text}, 0.14)
             end
         end
     end
@@ -2133,7 +2143,7 @@ function Library:WeaponSkinGrid(params)
         object:Close(true)
         activeRow, activeName, activeButton, activeStroke = row, item.Name, button, item._Stroke
         button.BackgroundColor3 = Library.Theme.Header
-        if activeStroke then tween(activeStroke, {Color = Library.Theme.Accent, Transparency = 0}, 0.14) end
+        if activeStroke then skin_tween(activeStroke, {Color = Library.Theme.Accent, Transparency = 0}, 0.14) end
         title.Text = tostring(row.Title or row.Key or "Items") .. " / " .. tostring(item.Label or item.Name)
         item.SkinTiles = {}
         local skins = type(item.Skins) == "table" and item.Skins or {}
@@ -2160,7 +2170,7 @@ function Library:WeaponSkinGrid(params)
         panel.Visible = true
         panel.GroupTransparency = 1
         placePanel(button)
-        tween(panel, {GroupTransparency = 0}, 0.12)
+        skin_tween(panel, {GroupTransparency = 0}, 0.12)
         paintSkinTiles(row, item)
     end
 
