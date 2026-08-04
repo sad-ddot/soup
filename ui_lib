@@ -1393,7 +1393,7 @@ function Library:CreateKeybind(data)
             if open and not pointInSettingsTree(popup, point) and not inBounds(point, shell) then closePopup() end
         end)
     end)
-    connect(shell.InputBegan, function(input)
+    connect(button.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
             if open then closePopup() else openPopup() end
         end
