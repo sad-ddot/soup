@@ -462,6 +462,20 @@ function Library:BindActive(toggleValue, bindFlag)
     return bind.Toggled == true
 end
 
+function Library:ResetKeybindsForParent(parentFlag)
+    local changed = false
+    for _, entry in ipairs(self.Keybinds) do
+        if entry.ParentFlag == parentFlag and entry.State and entry.State.Mode ~= "Always" then
+            if entry.State.Toggled or entry.State.active then
+                entry.State.Toggled = false
+                entry.State.active = false
+                changed = true
+            end
+        end
+    end
+    if changed and self.KeyListRefresh then self.KeyListRefresh() end
+end
+
 function Library:BindIsSet(bindFlag)
     local bind = self.Flags[bindFlag]
     if type(bind) ~= "table" then return false end
@@ -938,6 +952,7 @@ function SectionMethods:Checkbox(name, default, callback, style)
                 tween(boxStroke, {Transparency = 0.35}, 0.22)
             end)
         end
+        if not value then Library:ResetKeybindsForParent(flag) end
         if not silent then Library:SafeCall(callback, value) end
     end
     connect(row.MouseEnter, function()
@@ -1272,150 +1287,128 @@ function Library:CreateKeybind(data)
     local defaultKey = keyFromString(data.Default) or nil
     local bind = {Mode = data.Mode or "Toggle", Key = defaultKey, Toggled = false, active = false, ShowInKeybindList = data.ShowInKeybindList ~= false, Value = defaultKey and keyName(defaultKey) or "None"}
     self.Flags[flag] = bind
-    local shell = new("Frame", {Size = UDim2.fromOffset(58, 16), Position = UDim2.new(1, -64, 0.5, -8), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5, Name = "__keybind"}, data.Parent)
+    local shell = new("Frame", {Size = UDim2.fromOffset(58, 16), Position = UDim2.new(1, -64, 0.5, -8), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5, Name = "__keybind", Active = true}, data.Parent)
     repositionRightWidgets(data.Parent)
     local shellBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Input, BorderSizePixel = 0, ZIndex = 5}, shell)
     round(shellBg, 4)
     stroke(shellBg, Library.Theme.Stroke, 0.35)
-    local kbIcon = new("ImageLabel", {Size = UDim2.fromOffset(11, 11), Position = UDim2.new(0, 5, 0.5, -5), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 6}, shell)
+    new("ImageLabel", {Size = UDim2.fromOffset(11, 11), Position = UDim2.new(0, 5, 0.5, -5), BackgroundTransparency = 1, Image = "rbxassetid://121332782788896", ImageColor3 = Library.Theme.Accent, ScaleType = Enum.ScaleType.Fit, ZIndex = 6}, shell)
     local button = new("TextButton", {Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(19, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Text = bind.Value, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 10, AutoButtonColor = false, ZIndex = 6, TextXAlignment = Enum.TextXAlignment.Center}, shell)
-    local popup = new("CanvasGroup", {Size = UDim2.fromOffset(190, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9680, ClipsDescendants = true}, data.Window.PopupLayer)
-    Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
-    local popupBg = new("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Library.Theme.Control, BorderSizePixel = 0, ZIndex = 9680}, popup)
-    round(popupBg, 6)
-    stroke(popupBg, Library.Theme.Stroke, 0.08)
-    local popupContent = new("Frame", {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.fromOffset(0, 2), BackgroundTransparency = 1, ZIndex = 9681}, popup)
-    new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, popupContent)
-    new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4)}, popupContent)
+    local popup = new("CanvasGroup", {Size = UDim2.fromOffset(250, 150), BackgroundColor3 = Library.Theme.Panel, BorderSizePixel = 0, Visible = false, GroupTransparency = 1, ZIndex = 9680, ClipsDescendants = true, Active = true}, data.Window.PopupLayer)
+    popup:SetAttribute("SettingsPopupRoot", true)
+    round(popup, 7)
+    stroke(popup, Library.Theme.Stroke, 0.08)
+    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = Library.Theme.Header, BorderSizePixel = 0, ZIndex = 9681}, popup)
+    round(header, 7)
+    new("TextLabel", {Size = UDim2.new(1, -18, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = "Bind settings", TextColor3 = Library.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9682}, header)
+    local popupBody = new("Frame", {Size = UDim2.new(1, -16, 1, -40), Position = UDim2.fromOffset(8, 34), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 9681}, popup)
+    local bodyLayout = new("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5)}, popupBody)
+    new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 6)}, popupBody)
     local open = false
     local capture = false
-    local modeButtons = {}
-    local modeLines = {}
+    local captureKey = nil
     local show_in_list = bind.ShowInKeybindList ~= false
-    local mode_open = false
-    local function paintModes()
-        for modeName, btn in pairs(modeButtons) do
-            local on = modeName == bind.Mode
-            btn.TextColor3 = on and Library.Theme.Accent or Color3.fromRGB(255, 255, 255)
-            btn.BackgroundTransparency = on and 0.9 or 1
-            if modeLines[modeName] then
-                modeLines[modeName].Visible = on
-                modeLines[modeName].BackgroundColor3 = Library.Theme.Accent
-            end
-        end
+    local settingsSection = setmetatable({Window = data.Window, Body = popupBody, Page = data.Section and data.Section.Page, Name = "Bind settings", Side = 1}, SectionMethods)
+    local show_control
+    local mode_control
+    local closePopup
+    local function parentEnabled()
+        return not data.ParentFlag or Library.Flags[data.ParentFlag] == true
     end
-    local show_check
-    local mode_label
-    local function updateFlag(fireCallback)
+    local function updateFlag()
         bind.Value = bind.Key and keyName(bind.Key) or "None"
         bind.ShowInKeybindList = show_in_list
+        bind.active = bind.Toggled == true
         button.Text = bind.Value
-        bind.active = bind.Toggled
-        paintModes()
-        if show_check then
-            show_check.Text = show_in_list and "✓" or ""
-            show_check.TextColor3 = show_in_list and Library.Theme.Accent or Library.Theme.Dim
-        end
-        if mode_label then mode_label.Text = "Activation mode: " .. tostring(bind.Mode) end
-        Library.Flags[flag] = bind
-        if fireCallback == true then Library:SafeCall(data.Callback, bind.Toggled) end
-        if Library.KeyListRefresh then Library.KeyListRefresh() end
+        self.Flags[flag] = bind
+        if self.KeyListRefresh then self.KeyListRefresh() end
     end
     local function setMode(mode)
+        mode = tostring(mode or "Toggle")
+        if mode ~= "Hold" and mode ~= "Toggle" and mode ~= "Always" then mode = "Toggle" end
         bind.Mode = mode
         bind.Toggled = mode == "Always"
         bind.active = bind.Toggled
-        mode_open = false
-        paintModes()
-        updateFlag(false)
+        updateFlag()
     end
-    local function closePopup()
-        open = false
-        mode_open = false
-        Library.OpenFrames[popup] = nil
-        tween(popup, {Size = UDim2.fromOffset(190, 0)}, 0.12)
-        popup_transition(popup, false, 0.12, function()
-            if not open then
-                popup.Visible = false
-                Library.PopupOwners[popup] = nil
-            end
-        end)
+    local function clearBind()
+        bind.Key = nil
+        bind.Toggled = false
+        bind.active = false
+        capture = false
+        captureKey = nil
+        updateFlag()
     end
     local function placePopup()
         popup.Position = UDim2.fromOffset(shell.AbsolutePosition.X - data.Window.PopupLayer.AbsolutePosition.X, shell.AbsolutePosition.Y - data.Window.PopupLayer.AbsolutePosition.Y + shell.AbsoluteSize.Y + 3)
     end
-    local function openPopup()
-        for _, closer in pairs(Library.OpenFrames) do pcall(closer) end
-        Library.OpenFrames = {}
-        open = true
-        Library.PopupOwners[popup] = findSettingsOwner(data.Parent)
-        placePopup()
-        popup.Size = UDim2.fromOffset(190, 0)
-        mode_open = false
-        for _, option in pairs(modeButtons) do option.Visible = false end
-        popup_transition(popup, true, 0.14)
-        tween(popup, {Size = UDim2.fromOffset(190, 64)}, 0.14)
-        Library.OpenFrames[popup] = closePopup
+    closePopup = function()
+        open = false
+        for _, closer in pairs(self.OpenFrames) do pcall(closer) end
+        self.OpenFrames = {}
+        capture = false
+        captureKey = nil
+        self.SettingsPopups[popup] = nil
+        tween(popup, {Size = UDim2.fromOffset(250, 0)}, 0.12)
+        popup_transition(popup, false, 0.12, function()
+            if not open then
+                popup.Visible = false
+                self.PopupOwners[popup] = nil
+            end
+        end)
     end
+    local function openPopup()
+        self:CloseSettingsPopups()
+        for _, closer in pairs(self.OpenFrames) do pcall(closer) end
+        self.OpenFrames = {}
+        open = true
+        self.PopupOwners[popup] = popup
+        placePopup()
+        popup.Size = UDim2.fromOffset(250, 0)
+        popup_transition(popup, true, 0.14)
+        tween(popup, {Size = UDim2.fromOffset(250, 150)}, 0.14)
+        self.SettingsPopups[popup] = closePopup
+    end
+    connect(bodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+        popup:SetAttribute("FullHeight", math.max(142, bodyLayout.AbsoluteContentSize.Y + 42))
+    end)
+    show_control = settingsSection:Toggle({Name = "Show in keybind list", Flag = "__keybind_show_" .. tostring(flag):gsub("[^%w_]", "_"), Default = show_in_list, Callback = function(value)
+        show_in_list = value == true
+        updateFlag()
+    end})
+    mode_control = settingsSection:Dropdown({Name = "Activation mode", Flag = "__keybind_mode_" .. tostring(flag):gsub("[^%w_]", "_"), Items = {"Hold", "Toggle", "Always"}, Default = bind.Mode, Callback = function(value)
+        setMode(value)
+    end})
+    settingsSection:Button("Clear bind", function()
+        clearBind()
+        closePopup()
+    end)
     connect(RunService.RenderStepped, function()
         if open and popup.Visible then placePopup() end
     end)
     connect(UIS.InputBegan, function(input)
-        if not open or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        if not open or (input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.MouseButton2) then return end
         task.defer(function()
-            if open and not inBounds(input.Position, popup) and not inBounds(input.Position, shell) then closePopup() end
+            local point = Vector2.new(input.Position.X, input.Position.Y)
+            if open and not pointInSettingsTree(popup, point) and not inBounds(point, shell) then closePopup() end
         end)
     end)
-    local show_row = new("TextButton", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 9682}, popupContent)
-    local show_label = new("TextLabel", {Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = "Show in keybind list", TextColor3 = Library.Theme.Text, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9683}, show_row)
-    show_check = new("TextLabel", {Size = UDim2.fromOffset(22, 20), Position = UDim2.new(1, -28, 0.5, -10), BackgroundColor3 = Library.Theme.Input, Text = "", TextColor3 = Library.Theme.Accent, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, ZIndex = 9683}, show_row)
-    round(show_check, 4)
-    stroke(show_check, Library.Theme.Stroke, 0.18)
-    connect(show_row.MouseEnter, function() tween(show_row, {BackgroundTransparency = 0.86}, 0.1) end)
-    connect(show_row.MouseLeave, function() tween(show_row, {BackgroundTransparency = 1}, 0.1) end)
-    connect(show_row.MouseButton1Click, function()
-        show_in_list = not show_in_list
-        updateFlag(false)
-    end)
-
-    local mode_button = new("TextButton", {Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 0.12, Text = "", AutoButtonColor = false, ZIndex = 9682}, popupContent)
-    round(mode_button, 4)
-    stroke(mode_button, Library.Theme.Stroke, 0.18)
-    mode_label = new("TextLabel", {Size = UDim2.new(1, -26, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = "Activation mode: " .. tostring(bind.Mode), TextColor3 = Library.Theme.Text, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9683}, mode_button)
-    local mode_arrow = new("TextLabel", {Size = UDim2.fromOffset(18, 1), Position = UDim2.new(1, -24, 0.5, 0), BackgroundColor3 = Library.Theme.Dim, Text = "", TextColor3 = Library.Theme.Dim, TextSize = 1, ZIndex = 9683}, mode_button)
-    mode_arrow.Rotation = 0
-    local function set_mode_popup(value)
-        mode_open = value == true
-        for _, option in pairs(modeButtons) do option.Visible = mode_open end
-        local height = mode_open and 130 or 64
-        tween(popup, {Size = UDim2.fromOffset(190, height)}, 0.14)
-        tween(mode_button, {BackgroundColor3 = mode_open and Library.Theme.ControlHover or Library.Theme.Input}, 0.12)
-    end
-    connect(mode_button.MouseButton1Click, function() set_mode_popup(not mode_open) end)
-
-    for _, mode in ipairs({"Hold", "Toggle", "Always"}) do
-        local option = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundColor3 = Library.Theme.Input, BackgroundTransparency = 1, Text = mode, TextColor3 = Color3.fromRGB(255, 255, 255), TextTransparency = 0, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, Visible = false, ZIndex = 9682}, popupContent)
-        new("UIPadding", {PaddingLeft = UDim.new(0, 10)}, option)
-        local line = new("Frame", {Size = UDim2.new(0, 2, 1, 0), Position = UDim2.fromOffset(-12, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 9683}, option)
-        round(line, 2)
-        modeButtons[mode] = option
-        modeLines[mode] = line
-        connect(option.MouseEnter, function() if bind.Mode ~= mode then tween(option, {BackgroundTransparency = 0.86}, 0.1) end end)
-        connect(option.MouseLeave, function() if bind.Mode ~= mode then tween(option, {BackgroundTransparency = 1}, 0.1) end end)
-        connect(option.MouseButton1Click, function() setMode(mode) closePopup() end)
-    end
-    paintModes()
-    connect(button.InputBegan, function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton2 then if open then closePopup() else openPopup() end end
+    connect(shell.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            if open then closePopup() else openPopup() end
+        end
     end)
     connect(button.MouseButton1Click, function()
         closePopup()
         capture = true
+        captureKey = bind.Key
         button.Text = "..."
     end)
     connect(UIS.InputBegan, function(input, processed)
         if capture then
-            if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.Backspace then
+            if input.KeyCode == Enum.KeyCode.Escape then
+                bind.Key = captureKey
+            elseif input.KeyCode == Enum.KeyCode.Backspace then
                 bind.Key = nil
             elseif input.KeyCode ~= Enum.KeyCode.Unknown then
                 bind.Key = input.KeyCode
@@ -1423,20 +1416,23 @@ function Library:CreateKeybind(data)
                 bind.Key = input.UserInputType
             end
             capture = false
-            updateFlag(false)
+            captureKey = nil
+            updateFlag()
             return
         end
-        if processed then return end
-        if not bind.Key then return end
+        if processed or not bind.Key or not parentEnabled() then return end
         if input.KeyCode == bind.Key or input.UserInputType == bind.Key then
             if bind.Mode == "Toggle" then bind.Toggled = not bind.Toggled elseif bind.Mode == "Hold" then bind.Toggled = true elseif bind.Mode == "Always" then bind.Toggled = true end
-            updateFlag(true)
+            updateFlag()
         end
     end)
     connect(UIS.InputEnded, function(input)
-        if not bind.Key then return end
+        if not bind.Key or not parentEnabled() then
+            if not parentEnabled() and bind.Mode ~= "Always" then bind.Toggled = false bind.active = false updateFlag() end
+            return
+        end
         if input.KeyCode == bind.Key or input.UserInputType == bind.Key then
-            if bind.Mode == "Hold" then bind.Toggled = false updateFlag(true) end
+            if bind.Mode == "Hold" then bind.Toggled = false updateFlag() end
         end
     end)
     local object = {}
@@ -1447,18 +1443,27 @@ function Library:CreateKeybind(data)
             bind.Key = keyFromString(value.Key)
             bind.Mode = value.Mode or bind.Mode
             bind.Toggled = value.Toggled == true
-            if value.ShowInKeybindList ~= nil then show_in_list = value.ShowInKeybindList ~= false end
+            bind.active = bind.Toggled
+            if value.ShowInKeybindList ~= nil then
+                show_in_list = value.ShowInKeybindList ~= false
+                if show_control then show_control:Set(show_in_list, true) end
+            end
+            if mode_control then mode_control:Set(bind.Mode) end
         elseif value == true or value == false then
             bind.Toggled = value
+            bind.active = value
         else
             bind.Key = keyFromString(value)
         end
-        updateFlag(false)
+        updateFlag()
     end
-    function object:SetMode(mode) setMode(mode) end
+    function object:SetMode(mode)
+        setMode(mode)
+        if mode_control then mode_control:Set(bind.Mode) end
+    end
     self.Keybinds[#self.Keybinds + 1] = {Name = data.Name, Object = object, State = bind, Flag = flag, ParentFlag = data.ParentFlag}
     self.SetFlags[flag] = function(value) object:Set(value) end
-    updateFlag(false)
+    updateFlag()
     return object
 end
 
